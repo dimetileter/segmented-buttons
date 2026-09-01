@@ -14,7 +14,7 @@
             <enum name="expandable" value="4" />
         </attr>
 
-        <!-- Button count (1-4) / Buton sayısı -->
+        <!-- Button count (1-6) / Buton sayısı -->
         <attr name="sbButtonCount" format="integer" />
 
         <!-- Automatic single-selection behavior / Otomatik seçim davranışı -->
@@ -39,9 +39,19 @@
         <!-- Bar elevation & shadow / Çubuk gölge ve yükseklik seviyesi -->
         <attr name="sbElevation" format="dimension" />
 
+        <!-- Global icon tint / Genel ikon renk tonu -->
+        <attr name="sbIconTint" format="color|reference" />
+
+        <!-- Global all-activated toggle / Tüm butonların aktiflik durumunu tek ayarla belirleme -->
+        <attr name="sbAllActivated" format="boolean" />
+
         <!-- Initial selection and activation states / Başlangıç seçim ve aktiflik durumları -->
         <attr name="sbSelectedIndex" format="integer" />
         <attr name="sbPillActivated" format="boolean" />
+
+        <!-- Unselected button background control / Seçili olmayan buton arkaplan kontrolü -->
+        <attr name="sbShowUnselectedBackground" format="boolean" />
+        <attr name="sbUnselectedButtonColor" format="color|reference" />
 
         <!-- Per-button individual styles for hybrid bars / Hibrit barlar için buton bazlı stiller -->
         <attr name="sbButton1Style" format="enum">
@@ -64,30 +74,58 @@
             <enum name="circular" value="1" />
             <enum name="pill" value="2" />
         </attr>
+        <attr name="sbButton5Style" format="enum">
+            <enum name="horizontal" value="0" />
+            <enum name="circular" value="1" />
+            <enum name="pill" value="2" />
+        </attr>
+        <attr name="sbButton6Style" format="enum">
+            <enum name="horizontal" value="0" />
+            <enum name="circular" value="1" />
+            <enum name="pill" value="2" />
+        </attr>
 
-        <!-- Per-button resources (1..4) / Buton kaynakları -->
+        <!-- Per-button resources & states (1..6) / Buton kaynakları ve durumları -->
         <attr name="sbButton1Icon" format="reference" />
         <attr name="sbButton1Text" format="string" />
+        <attr name="sbButton1IconTint" format="color|reference" />
         <attr name="sbButton1Selected" format="boolean" />
         <attr name="sbButton1Activated" format="boolean" />
         <attr name="sbButton1Enabled" format="boolean" />
 
         <attr name="sbButton2Icon" format="reference" />
         <attr name="sbButton2Text" format="string" />
+        <attr name="sbButton2IconTint" format="color|reference" />
         <attr name="sbButton2Selected" format="boolean" />
         <attr name="sbButton2Activated" format="boolean" />
         <attr name="sbButton2Enabled" format="boolean" />
 
         <attr name="sbButton3Icon" format="reference" />
         <attr name="sbButton3Text" format="string" />
+        <attr name="sbButton3IconTint" format="color|reference" />
         <attr name="sbButton3Selected" format="boolean" />
         <attr name="sbButton3Activated" format="boolean" />
         <attr name="sbButton3Enabled" format="boolean" />
 
         <attr name="sbButton4Icon" format="reference" />
         <attr name="sbButton4Text" format="string" />
+        <attr name="sbButton4IconTint" format="color|reference" />
         <attr name="sbButton4Selected" format="boolean" />
         <attr name="sbButton4Activated" format="boolean" />
         <attr name="sbButton4Enabled" format="boolean" />
+
+        <attr name="sbButton5Icon" format="reference" />
+        <attr name="sbButton5Text" format="string" />
+        <attr name="sbButton5IconTint" format="color|reference" />
+        <attr name="sbButton5Selected" format="boolean" />
+        <attr name="sbButton5Activated" format="boolean" />
+        <attr name="sbButton5Enabled" format="boolean" />
+
+        <attr name="sbButton6Icon" format="reference" />
+        <attr name="sbButton6Text" format="string" />
+        <attr name="sbButton6IconTint" format="color|reference" />
+        <attr name="sbButton6Selected" format="boolean" />
+        <attr name="sbButton6Activated" format="boolean" />
+        <attr name="sbButton6Enabled" format="boolean" />
     </declare-styleable>
 </resources>

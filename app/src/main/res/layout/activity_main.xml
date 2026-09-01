@@ -22,11 +22,32 @@
             android:textStyle="bold"
             android:layout_marginBottom="24dp" />
 
-        <!-- 1. Horizontal Style (Text-Only, Centered) -->
+        <!-- 1. 5-Button Bar with Hybrid Circular & Icon Tint -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="1. Horizontal Style (Text-Only / Centered)"
+            android:text="1. 5-Button Hybrid Bar (with Icon Tint)"
+            android:layout_marginBottom="8dp" />
+
+        <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
+            android:id="@+id/fiveButtonBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:sbStyle="horizontal"
+            app:sbButtonCount="5"
+            app:sbButton1Icon="@drawable/ic_sb_arrow_back"
+            app:sbButton2Icon="@drawable/ic_sb_arrow_next"
+            app:sbButton3Icon="@drawable/ic_sb_arrow_back"
+            app:sbButton4Icon="@drawable/ic_sb_arrow_next"
+            app:sbButton5Style="circular"
+            app:sbButton5Icon="@drawable/ic_sb_arrow_next"
+            android:layout_marginBottom="20dp" />
+
+        <!-- 2. Horizontal Style (Text-Only, Centered) -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="2. Horizontal Style (Text-Only / Centered)"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -40,11 +61,11 @@
             app:sbButton3Text="Month"
             android:layout_marginBottom="20dp" />
 
-        <!-- 2. Hybrid Style (2 Horizontal + 1 Circular 32x32dp Action Button) -->
+        <!-- 3. Hybrid Style (2 Horizontal + 1 Circular 32x32dp) -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="2. Hybrid Style (2 Horizontal + 1 Circular 32x32)"
+            android:text="3. Hybrid Style (2 Horizontal + 1 Circular 32x32)"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -59,11 +80,11 @@
             app:sbButton3Icon="@drawable/ic_sb_arrow_next"
             android:layout_marginBottom="20dp" />
 
-        <!-- 3. Horizontal Style (Icon + Text) -->
+        <!-- 4. Horizontal Style (Icon + Text) -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="3. Horizontal Style (Icon + Text)"
+            android:text="4. Horizontal Style (Icon + Text)"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -78,11 +99,11 @@
             app:sbButton2Text="Next"
             android:layout_marginBottom="20dp" />
 
-        <!-- 4. Vertical Style (3 Buttons) -->
+        <!-- 5. Vertical Style (3 Buttons) -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="4. Vertical Style (3 Buttons)"
+            android:text="5. Vertical Style (3 Buttons)"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -94,21 +115,6 @@
             app:sbButton1Icon="@drawable/ic_sb_arrow_next"
             app:sbButton2Icon="@drawable/ic_sb_arrow_back"
             app:sbButton3Icon="@drawable/ic_sb_arrow_next"
-            android:layout_marginBottom="20dp" />
-
-        <!-- 5. Circular Style (Single Button) -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="5. Circular Style (24dp Button)"
-            android:layout_marginBottom="8dp" />
-
-        <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
-            android:id="@+id/circularBar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:sbStyle="circular"
-            app:sbButton1Icon="@drawable/ic_sb_arrow_next"
             android:layout_marginBottom="20dp" />
 
         <!-- 6. Expandable Animated Style -->

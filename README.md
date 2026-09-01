@@ -179,10 +179,16 @@ segmentedBar.setOnExpandChangeListener { isExpanded ->
 // Selection & State Management
 segmentedBar.selectButton(index = 1)
 segmentedBar.clearSelection() // Deselects all buttons
+segmentedBar.setAllActivated(true) // Activates all buttons in one call
+segmentedBar.activateButton(index = 0) // Activates button 0, deactivates others
 segmentedBar.setButtonSelected(index = 0, selected = true)
 segmentedBar.setButtonActivated(index = 0, activated = true)
 segmentedBar.setButtonEnabled(index = 0, enabled = false)
 val selectedIndex = segmentedBar.getSelectedButtonIndex()
+
+// Icon Tint Management
+segmentedBar.setIconTint(Color.RED) // Global tint
+segmentedBar.setButtonIconTint(index = 1, Color.BLUE) // Per-button tint
 
 // Dynamic Text & Icon Updates
 segmentedBar.setButtonText(0, "New Title")
@@ -196,15 +202,18 @@ segmentedBar.setButtonIcon(0, R.drawable.ic_new_icon)
 | Attribute | Format | Default | Description |
 |---|---|---|---|
 | `app:sbStyle` | `enum` | `horizontal` | Button bar layout style (`horizontal`, `vertical`, `circular`, `pill`, `expandable`) |
-| `app:sbButtonCount` | `integer` | `2` (or `3`) | Total number of buttons (`1` to `4`) |
+| `app:sbButtonCount` | `integer` | `2` (or `3`) | Total number of buttons (`1` to `6`) |
 | `app:sbSelectedIndex` | `integer` | `0` | Initial selected button index (`-1` for none) |
+| `app:sbAllActivated` | `boolean` | `false` | Set `isActivated` for all buttons at once |
 | `app:sbPillActivated` | `boolean` | `false` | Initial locked/active state for pill buttons |
-| `app:sbButton1Style` .. `app:sbButton4Style` | `enum` | `horizontal` | Individual button style for hybrid bars (`horizontal`, `circular`, `pill`) |
-| `app:sbButton1Icon` .. `app:sbButton4Icon` | `reference` | `@null` | Icon resource drawable for the corresponding button |
-| `app:sbButton1Text` .. `app:sbButton4Text` | `string` | `@null` | Text label for the corresponding button |
-| `app:sbButton1Selected` .. `app:sbButton4Selected` | `boolean` | `false` (btn 1: `true`) | Initial selection state (`isSelected`) per button |
-| `app:sbButton1Activated` .. `app:sbButton4Activated` | `boolean` | `false` | Initial activation state (`isActivated`) per button |
-| `app:sbButton1Enabled` .. `app:sbButton4Enabled` | `boolean` | `true` | Enable/disable state (`isEnabled`) per button |
+| `app:sbIconTint` | `color` | `@null` | Global tint color or ColorStateList applied to all button icons |
+| `app:sbButton1Style` .. `app:sbButton6Style` | `enum` | `horizontal` | Individual button style for hybrid bars (`horizontal`, `circular`, `pill`) |
+| `app:sbButton1Icon` .. `app:sbButton6Icon` | `reference` | `@null` | Icon resource drawable for the corresponding button |
+| `app:sbButton1Text` .. `app:sbButton6Text` | `string` | `@null` | Text label for the corresponding button |
+| `app:sbButton1IconTint` .. `app:sbButton6IconTint` | `color` | `@null` | Individual icon tint per button |
+| `app:sbButton1Selected` .. `app:sbButton6Selected` | `boolean` | `false` (btn 1: `true`) | Initial selection state (`isSelected`) per button |
+| `app:sbButton1Activated` .. `app:sbButton6Activated` | `boolean` | `false` | Initial activation state (`isActivated`) per button |
+| `app:sbButton1Enabled` .. `app:sbButton6Enabled` | `boolean` | `true` | Enable/disable state (`isEnabled`) per button |
 | `app:sbAutoSelect` | `boolean` | `true` | Automatically toggle `isSelected` on tap |
 | `app:sbMaxWidth` | `dimension` | `match_parent` | Optional maximum width cap for responsive layouts |
 | `app:sbPillType` | `enum` | `next` | Action type for pill style (`next`, `back`, `text`) |

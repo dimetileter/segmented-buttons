@@ -5,8 +5,8 @@ import androidx.appcompat.app.AppCompatActivity
 import com.dimetileter.segmentedbuttons.databinding.ActivityMainBinding
 
 /**
- * SegmentedButtonBar bileşenlerinin hibrit, metin ve ikon odaklı kullanımını gösteren örnek etkinlik.
- * Demo activity showcasing hybrid, text-only, icon-only, and animated configurations.
+ * SegmentedButtonBar bileşenlerinin hibrit, metin, ikon renklendirme ve durum yönetimini gösteren örnek etkinlik.
+ * Demo activity showcasing hybrid styles, icon tinting, and state management.
  */
 class MainActivity : AppCompatActivity() {
 
@@ -21,6 +21,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
+        // 5-Button Bar with Circular action and icon tint
+        binding.fiveButtonBar.setOnButton1Click {
+            binding.statusText.text = "Status: 5-Button -> Button 1 clicked"
+        }
+        binding.fiveButtonBar.setOnButton2Click {
+            binding.statusText.text = "Status: 5-Button -> Button 2 clicked"
+        }
+        binding.fiveButtonBar.setOnButton3Click {
+            binding.statusText.text = "Status: 5-Button -> Button 3 clicked"
+        }
+        binding.fiveButtonBar.setOnButton4Click {
+            binding.statusText.text = "Status: 5-Button -> Button 4 clicked"
+        }
+        binding.fiveButtonBar.setOnButton5Click {
+            binding.statusText.text = "Status: 5-Button -> Button 5 (Circular) clicked!"
+        }
+
         // Horizontal text-only bar (Day, Week, Month)
         binding.horizontalBarTextOnly.setOnButton1Click {
             binding.statusText.text = "Status: Text-Only -> Button 1 (Day)"
@@ -60,11 +77,6 @@ class MainActivity : AppCompatActivity() {
         }
         binding.verticalBar3.setOnButton3Click {
             binding.statusText.text = "Status: Vertical -> Button 3"
-        }
-
-        // Circular single-button bar
-        binding.circularBar.setOnButton1Click {
-            binding.statusText.text = "Status: Circular button clicked"
         }
 
         // Expandable animated bar
