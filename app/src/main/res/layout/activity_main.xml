@@ -22,7 +22,7 @@
             android:textStyle="bold"
             android:layout_marginBottom="24dp" />
 
-        <!-- 1. Horizontal Style (Text-Only, Perfectly Centered) -->
+        <!-- 1. Horizontal Style (Text-Only, Centered) -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -40,11 +40,30 @@
             app:sbButton3Text="Month"
             android:layout_marginBottom="20dp" />
 
-        <!-- 2. Horizontal Style (Icon + Text) -->
+        <!-- 2. Hybrid Style (2 Horizontal + 1 Circular 32x32dp Action Button) -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="2. Horizontal Style (Icon + Text)"
+            android:text="2. Hybrid Style (2 Horizontal + 1 Circular 32x32)"
+            android:layout_marginBottom="8dp" />
+
+        <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
+            android:id="@+id/hybridBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:sbStyle="horizontal"
+            app:sbButtonCount="3"
+            app:sbButton1Text="Active"
+            app:sbButton2Text="Completed"
+            app:sbButton3Style="circular"
+            app:sbButton3Icon="@drawable/ic_sb_arrow_next"
+            android:layout_marginBottom="20dp" />
+
+        <!-- 3. Horizontal Style (Icon + Text) -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="3. Horizontal Style (Icon + Text)"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -59,11 +78,11 @@
             app:sbButton2Text="Next"
             android:layout_marginBottom="20dp" />
 
-        <!-- 3. Vertical Style (Icon-Only & Text-Flexible) -->
+        <!-- 4. Vertical Style (3 Buttons) -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="3. Vertical Style (3 Buttons)"
+            android:text="4. Vertical Style (3 Buttons)"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -77,11 +96,11 @@
             app:sbButton3Icon="@drawable/ic_sb_arrow_next"
             android:layout_marginBottom="20dp" />
 
-        <!-- 4. Circular Style (Single Button) -->
+        <!-- 5. Circular Style (Single Button) -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="4. Circular Style (24dp Button)"
+            android:text="5. Circular Style (24dp Button)"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -92,11 +111,11 @@
             app:sbButton1Icon="@drawable/ic_sb_arrow_next"
             android:layout_marginBottom="20dp" />
 
-        <!-- 5. Expandable Animated Style -->
+        <!-- 6. Expandable Animated Style -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="5. Expandable Animated Style"
+            android:text="6. Expandable Animated Style"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -110,11 +129,11 @@
             app:sbButton3Icon="@drawable/ic_sb_arrow_next"
             android:layout_marginBottom="20dp" />
 
-        <!-- 6. Pill Style (Next Button) -->
+        <!-- 7. Pill Style (Next Button) -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="6. Pill Style (Next Action)"
+            android:text="7. Pill Style (Next Action)"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar

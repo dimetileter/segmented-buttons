@@ -78,6 +78,16 @@ Supports **Text-Only** (automatically centered), **Icon-Only**, or **Icon + Text
     app:sbButton1Text="Previous"
     app:sbButton2Icon="@drawable/ic_next"
     app:sbButton2Text="Next" />
+<!-- Hybrid Style: 2 Horizontal + 1 Circular 32x32dp Action Button -->
+<com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:sbStyle="horizontal"
+    app:sbButtonCount="3"
+    app:sbButton1Text="Active"
+    app:sbButton2Text="Completed"
+    app:sbButton3Style="circular"
+    app:sbButton3Icon="@drawable/ic_add" />
 ```
 
 ### 2. Vertical Style (`vertical`)
@@ -181,6 +191,7 @@ segmentedBar.setButtonIcon(0, R.drawable.ic_new_icon)
 |---|---|---|---|
 | `app:sbStyle` | `enum` | `horizontal` | Button bar layout style (`horizontal`, `vertical`, `circular`, `pill`, `expandable`) |
 | `app:sbButtonCount` | `integer` | `2` (or `3`) | Total number of buttons (`1` to `4`) |
+| `app:sbButton1Style` .. `app:sbButton4Style` | `enum` | `horizontal` | Individual button style for hybrid bars (`horizontal`, `circular`, `pill`) |
 | `app:sbButton1Icon` .. `app:sbButton4Icon` | `reference` | `@null` | Icon resource drawable for the corresponding button |
 | `app:sbButton1Text` .. `app:sbButton4Text` | `string` | `@null` | Text label for the corresponding button |
 | `app:sbAutoSelect` | `boolean` | `true` | Automatically toggle `isSelected` on tap |

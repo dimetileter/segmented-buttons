@@ -39,6 +39,28 @@
         <!-- Bar elevation & shadow / Çubuk gölge ve yükseklik seviyesi -->
         <attr name="sbElevation" format="dimension" />
 
+        <!-- Per-button individual styles for hybrid bars / Hibrit barlar için buton bazlı stiller -->
+        <attr name="sbButton1Style" format="enum">
+            <enum name="horizontal" value="0" />
+            <enum name="circular" value="1" />
+            <enum name="pill" value="2" />
+        </attr>
+        <attr name="sbButton2Style" format="enum">
+            <enum name="horizontal" value="0" />
+            <enum name="circular" value="1" />
+            <enum name="pill" value="2" />
+        </attr>
+        <attr name="sbButton3Style" format="enum">
+            <enum name="horizontal" value="0" />
+            <enum name="circular" value="1" />
+            <enum name="pill" value="2" />
+        </attr>
+        <attr name="sbButton4Style" format="enum">
+            <enum name="horizontal" value="0" />
+            <enum name="circular" value="1" />
+            <enum name="pill" value="2" />
+        </attr>
+
         <!-- Per-button resources (1..4) / Buton kaynakları -->
         <attr name="sbButton1Icon" format="reference" />
         <attr name="sbButton1Text" format="string" />

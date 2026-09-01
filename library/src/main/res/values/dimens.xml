@@ -20,5 +20,6 @@
     <dimen name="sb_vertical_button_width">32dp</dimen>
     <dimen name="sb_vertical_button_height">48dp</dimen>
     <dimen name="sb_circular_button_size">24dp</dimen>
+    <dimen name="sb_circular_button_hybrid_size">32dp</dimen>
     <dimen name="sb_button_text_size">12sp</dimen>
 </resources>

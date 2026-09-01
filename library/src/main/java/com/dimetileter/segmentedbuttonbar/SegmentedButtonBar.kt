@@ -15,11 +15,10 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.annotation.DrawableRes
 import androidx.core.content.ContextCompat
-import androidx.core.content.res.ResourcesCompat
 
 /**
- * SegmentedButtonBar — Özelleştirilebilir, XML tabanlı, metin ve ikon odaklı dinamik Segmented Buton bileşeni.
- * SegmentedButtonBar — Customizable, XML-configurable, text & icon flexible dynamic Segmented Button component.
+ * SegmentedButtonBar — Özelleştirilebilir, hibrit stilleri destekleyen dinamik Segmented Buton bileşeni.
+ * SegmentedButtonBar — Customizable, dynamic Segmented Button component with hybrid/mixed style support.
  */
 class SegmentedButtonBar @JvmOverloads constructor(
     context: Context,
@@ -28,12 +27,17 @@ class SegmentedButtonBar @JvmOverloads constructor(
 ) : LinearLayout(context, attrs, defStyleAttr) {
 
     companion object {
-        // Stil Sabitleri / Style Constants
+        // Çubuk Stil Sabitleri / Bar Style Constants
         const val STYLE_HORIZONTAL = 0
         const val STYLE_VERTICAL = 1
         const val STYLE_CIRCULAR = 2
         const val STYLE_PILL = 3
         const val STYLE_EXPANDABLE = 4
+
+        // Buton Bazlı Stil Sabitleri / Per-Button Style Constants
+        const val BUTTON_STYLE_HORIZONTAL = 0
+        const val BUTTON_STYLE_CIRCULAR = 1
+        const val BUTTON_STYLE_PILL = 2
 
         // Pill Türü Sabitleri / Pill Type Constants
         const val PILL_NEXT = 0
@@ -113,9 +117,9 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
     /**
      * Yatay segmented buton çubuğunu yapılandırır.
-     * Metin veya ikon durumuna göre ortalama ve hizalama kurallarını uygular.
+     * Standart ve hibrit (ör. 2 yatay + 1 dairesel) butonları destekler.
      * Configures the horizontal segmented button bar.
-     * Applies centering and alignment rules based on text/icon presence.
+     * Supports standard and hybrid (e.g. 2 horizontal + 1 circular) buttons.
      */
     private fun setupHorizontal(ta: TypedArray) {
         orientation = HORIZONTAL
@@ -127,6 +131,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
         val buttonGapIconText = context.resources.getDimensionPixelSize(R.dimen.sb_button_gap_icon_text)
         val buttonHeight = context.resources.getDimensionPixelSize(R.dimen.sb_button_height)
         val minWidth = context.resources.getDimensionPixelSize(R.dimen.sb_button_min_width)
+        val circularHybridSize = context.resources.getDimensionPixelSize(R.dimen.sb_circular_button_hybrid_size)
 
         setPadding(barPadding, barPadding, barPadding, barPadding)
         removeAllViews()
@@ -135,66 +140,89 @@ class SegmentedButtonBar @JvmOverloads constructor(
         val inflater = LayoutInflater.from(context)
 
         for (i in 0 until buttonCount) {
-            val itemView = inflater.inflate(R.layout.sb_button_horizontal_item, this, false)
-            val iconView = itemView.findViewById<ImageView>(R.id.sb_item_icon)
-            val textView = itemView.findViewById<TextView>(R.id.sb_item_text)
-
             val (iconRes, textVal) = getButtonAttributes(ta, i)
-            val hasIcon = (iconRes != 0)
-            val hasText = !textVal.isNullOrEmpty()
-
-            when {
-                // İkon + Metin birlikte / Icon + Text together
-                hasIcon && hasText -> {
-                    iconView.setImageResource(iconRes)
-                    iconView.visibility = View.VISIBLE
-                    textView.text = textVal
-                    textView.visibility = View.VISIBLE
-                    (textView.layoutParams as? MarginLayoutParams)?.marginStart = buttonGapIconText
-                    textView.gravity = Gravity.CENTER_VERTICAL or Gravity.START
-                }
-                // Yalnızca Metin (Tam Ortalanmış) / Text Only (Centered)
-                !hasIcon && hasText -> {
-                    iconView.visibility = View.GONE
-                    textView.text = textVal
-                    textView.visibility = View.VISIBLE
-                    (textView.layoutParams as? MarginLayoutParams)?.marginStart = 0
-                    textView.gravity = Gravity.CENTER
-                }
-                // Yalnızca İkon (Tam Ortalanmış) / Icon Only (Centered)
-                hasIcon && !hasText -> {
-                    iconView.setImageResource(iconRes)
-                    iconView.visibility = View.VISIBLE
-                    textView.visibility = View.GONE
-                    (textView.layoutParams as? MarginLayoutParams)?.marginStart = 0
-                }
-                // Hiçbiri verilmemişse varsayılan metin / Fallback when neither is specified
-                else -> {
-                    iconView.visibility = View.GONE
-                    textView.text = getDefaultContentDescription(i)
-                    textView.visibility = View.VISIBLE
-                    (textView.layoutParams as? MarginLayoutParams)?.marginStart = 0
-                    textView.gravity = Gravity.CENTER
-                }
-            }
-
-            itemView.contentDescription = textVal ?: getDefaultContentDescription(i)
-
-            val params = LayoutParams(0, buttonHeight, 1f).apply {
-                if (i > 0) {
-                    marginStart = buttonGap
-                }
-            }
-            itemView.minimumWidth = minWidth
-            itemView.layoutParams = params
+            val buttonStyle = getButtonStyle(ta, i)
 
             val buttonIndex = i
-            itemView.isSelected = (buttonIndex == 0)
-            itemView.setOnClickListener {
-                if (autoSelect) {
-                    selectButton(buttonIndex)
+            val itemView: View
+
+            if (buttonStyle == BUTTON_STYLE_CIRCULAR) {
+                // Hibrit Dairesel Buton (32x32dp) / Hybrid Circular Button (32x32dp)
+                itemView = inflater.inflate(R.layout.sb_button_circular_item, this, false)
+                val iconView = itemView.findViewById<ImageView>(R.id.sb_circular_icon)
+                val finalIcon = if (iconRes != 0) iconRes else R.drawable.ic_sb_arrow_next
+                iconView.setImageResource(finalIcon)
+
+                itemView.contentDescription = textVal ?: getDefaultContentDescription(i)
+
+                val params = LayoutParams(circularHybridSize, circularHybridSize).apply {
+                    if (i > 0) {
+                        marginStart = buttonGap
+                    }
                 }
-                buttonClickListeners[buttonIndex]?.invoke()
+                itemView.layoutParams = params
+                itemView.isSelected = false
+
+                itemView.setOnClickListener {
+                    buttonClickListeners[buttonIndex]?.invoke()
+                }
+            } else {
+                // Standart Yatay Buton (Ağırlıklı / Flexible Horizontal Button)
+                itemView = inflater.inflate(R.layout.sb_button_horizontal_item, this, false)
+                val iconView = itemView.findViewById<ImageView>(R.id.sb_item_icon)
+                val textView = itemView.findViewById<TextView>(R.id.sb_item_text)
+
+                val hasIcon = (iconRes != 0)
+                val hasText = !textVal.isNullOrEmpty()
+
+                when {
+                    hasIcon && hasText -> {
+                        iconView.setImageResource(iconRes)
+                        iconView.visibility = View.VISIBLE
+                        textView.text = textVal
+                        textView.visibility = View.VISIBLE
+                        (textView.layoutParams as? MarginLayoutParams)?.marginStart = buttonGapIconText
+                        textView.gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                    }
+                    !hasIcon && hasText -> {
+                        iconView.visibility = View.GONE
+                        textView.text = textVal
+                        textView.visibility = View.VISIBLE
+                        (textView.layoutParams as? MarginLayoutParams)?.marginStart = 0
+                        textView.gravity = Gravity.CENTER
+                    }
+                    hasIcon && !hasText -> {
+                        iconView.setImageResource(iconRes)
+                        iconView.visibility = View.VISIBLE
+                        textView.visibility = View.GONE
+                        (textView.layoutParams as? MarginLayoutParams)?.marginStart = 0
+                    }
+                    else -> {
+                        iconView.visibility = View.GONE
+                        textView.text = getDefaultContentDescription(i)
+                        textView.visibility = View.VISIBLE
+                        (textView.layoutParams as? MarginLayoutParams)?.marginStart = 0
+                        textView.gravity = Gravity.CENTER
+                    }
+                }
+
+                itemView.contentDescription = textVal ?: getDefaultContentDescription(i)
+
+                val params = LayoutParams(0, buttonHeight, 1f).apply {
+                    if (i > 0) {
+                        marginStart = buttonGap
+                    }
+                }
+                itemView.minimumWidth = minWidth
+                itemView.layoutParams = params
+
+                itemView.isSelected = (buttonIndex == 0)
+                itemView.setOnClickListener {
+                    if (autoSelect) {
+                        selectButton(buttonIndex)
+                    }
+                    buttonClickListeners[buttonIndex]?.invoke()
+                }
             }
 
             buttonViews.add(itemView)
@@ -440,6 +468,16 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
 
         isExpanded = false
+    }
+
+    private fun getButtonStyle(ta: TypedArray, index: Int): Int {
+        return when (index) {
+            0 -> ta.getInt(R.styleable.SegmentedButtonBar_sbButton1Style, BUTTON_STYLE_HORIZONTAL)
+            1 -> ta.getInt(R.styleable.SegmentedButtonBar_sbButton2Style, BUTTON_STYLE_HORIZONTAL)
+            2 -> ta.getInt(R.styleable.SegmentedButtonBar_sbButton3Style, BUTTON_STYLE_HORIZONTAL)
+            3 -> ta.getInt(R.styleable.SegmentedButtonBar_sbButton4Style, BUTTON_STYLE_HORIZONTAL)
+            else -> BUTTON_STYLE_HORIZONTAL
+        }
     }
 
     private fun getButtonAttributes(ta: TypedArray, index: Int): Pair<Int, String?> {

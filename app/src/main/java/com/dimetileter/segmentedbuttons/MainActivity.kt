@@ -5,8 +5,8 @@ import androidx.appcompat.app.AppCompatActivity
 import com.dimetileter.segmentedbuttons.databinding.ActivityMainBinding
 
 /**
- * SegmentedButtonBar bileşenlerinin metin ve ikon odaklı kullanımını gösteren örnek etkinlik.
- * Demo activity showcasing text-only, icon-only, and icon+text configurations.
+ * SegmentedButtonBar bileşenlerinin hibrit, metin ve ikon odaklı kullanımını gösteren örnek etkinlik.
+ * Demo activity showcasing hybrid, text-only, icon-only, and animated configurations.
  */
 class MainActivity : AppCompatActivity() {
 
@@ -30,6 +30,17 @@ class MainActivity : AppCompatActivity() {
         }
         binding.horizontalBarTextOnly.setOnButton3Click {
             binding.statusText.text = "Status: Text-Only -> Button 3 (Month)"
+        }
+
+        // Hybrid bar (2 Horizontal + 1 Circular 32x32dp)
+        binding.hybridBar.setOnButton1Click {
+            binding.statusText.text = "Status: Hybrid -> Tab 1 (Active)"
+        }
+        binding.hybridBar.setOnButton2Click {
+            binding.statusText.text = "Status: Hybrid -> Tab 2 (Completed)"
+        }
+        binding.hybridBar.setOnButton3Click {
+            binding.statusText.text = "Status: Hybrid -> Button 3 (Circular 32x32 Action clicked!)"
         }
 
         // Horizontal icon + text bar
