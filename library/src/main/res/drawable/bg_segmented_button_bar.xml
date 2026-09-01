@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SegmentedButtonBar container background / SegmentedButtonBar çubuk arka planı -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="@dimen/sb_bar_radius" />
+    <solid android:color="@color/sb_bar_background" />
+</shape>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Single Pill Button Item / Tekil Pill Buton Öğesi -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/sb_pill_root"
+    android:layout_width="@dimen/sb_button_min_width"
+    android:layout_height="@dimen/sb_button_height"
+    android:background="@drawable/state_segmented_next_button"
+    android:foreground="?android:attr/selectableItemBackgroundBorderless"
+    android:clipToOutline="true"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- Pill Icon (Next / Back) / Pill İkonu -->
+    <ImageView
+        android:id="@+id/sb_pill_icon"
+        android:layout_width="@dimen/sb_button_icon_size"
+        android:layout_height="@dimen/sb_button_icon_size"
+        android:layout_gravity="center"
+        android:scaleType="centerInside"
+        android:contentDescription="@null"
+        android:visibility="gone"
+        tools:visibility="visible" />
+
+    <!-- Pill Text Label / Pill Metni -->
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/sb_pill_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:textColor="@color/sb_button_text"
+        android:textSize="@dimen/sb_button_text_size"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:visibility="gone"
+        tools:visibility="visible"
+        tools:text="Next" />
+</FrameLayout>

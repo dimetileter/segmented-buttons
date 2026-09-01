@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Single Horizontal Button Item / Tekil Yatay Buton Öğesi -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/sb_item_root"
+    android:layout_width="0dp"
+    android:layout_height="@dimen/sb_button_height"
+    android:layout_weight="1"
+    android:minWidth="@dimen/sb_button_min_width"
+    android:orientation="horizontal"
+    android:gravity="center"
+    android:padding="@dimen/sb_button_padding"
+    android:background="@drawable/state_segmented_button"
+    android:foreground="?android:attr/selectableItemBackground"
+    android:clipToOutline="true"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- Button Icon / Buton İkonu -->
+    <ImageView
+        android:id="@+id/sb_item_icon"
+        android:layout_width="@dimen/sb_button_icon_size"
+        android:layout_height="@dimen/sb_button_icon_size"
+        android:scaleType="centerInside"
+        android:contentDescription="@null"
+        android:visibility="gone"
+        tools:visibility="visible" />
+
+    <!-- Button Text / Buton Metni -->
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/sb_item_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/sb_button_gap_icon_text"
+        android:gravity="center_vertical|start"
+        android:textColor="@color/sb_button_text"
+        android:textSize="@dimen/sb_button_text_size"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:visibility="gone"
+        tools:visibility="visible"
+        tools:text="Button" />
+</LinearLayout>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- State list background for pill buttons (Next, Back, Text) -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false">
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/sb_bar_radius" />
+            <solid android:color="@color/sb_button_disabled" />
+        </shape>
+    </item>
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/sb_bar_radius" />
+            <solid android:color="@color/sb_button_selected" />
+        </shape>
+    </item>
+    <item android:state_activated="false">
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/sb_bar_radius" />
+            <solid android:color="@color/sb_button_disabled" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/sb_bar_radius" />
+            <solid android:color="@color/sb_button_unselected" />
+        </shape>
+    </item>
+</selector>

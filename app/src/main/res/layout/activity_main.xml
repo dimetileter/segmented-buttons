@@ -1,19 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:padding="24dp"
     tools:context=".MainActivity">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:text="SegmentedButtonBar Demo"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="32dp" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Horizontal Style (2 Buttons)"
+        android:layout_marginBottom="8dp" />
+
+    <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
+        android:id="@+id/horizontalBar2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:sbStyle="horizontal"
+        app:sbButtonCount="2"
+        app:sbButton1Text="Camera"
+        app:sbButton2Text="Gallery"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Horizontal Style (3 Buttons)"
+        android:layout_marginBottom="8dp" />
+
+    <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
+        android:id="@+id/horizontalBar3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:sbStyle="horizontal"
+        app:sbButtonCount="3"
+        app:sbButton1Text="All"
+        app:sbButton2Text="Favorites"
+        app:sbButton3Text="Archived"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Pill Style (Next Action)"
+        android:layout_marginBottom="8dp" />
+
+    <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
+        android:id="@+id/pillNextBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:sbStyle="pill"
+        app:sbPillType="next"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Status: Ready"
+        android:textSize="14sp"
+        android:layout_marginTop="16dp" />
+</LinearLayout>
