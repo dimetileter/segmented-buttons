@@ -39,6 +39,10 @@
         <!-- Bar elevation & shadow / Çubuk gölge ve yükseklik seviyesi -->
         <attr name="sbElevation" format="dimension" />
 
+        <!-- Initial selection and activation states / Başlangıç seçim ve aktiflik durumları -->
+        <attr name="sbSelectedIndex" format="integer" />
+        <attr name="sbPillActivated" format="boolean" />
+
         <!-- Per-button individual styles for hybrid bars / Hibrit barlar için buton bazlı stiller -->
         <attr name="sbButton1Style" format="enum">
             <enum name="horizontal" value="0" />
@@ -64,14 +68,26 @@
         <!-- Per-button resources (1..4) / Buton kaynakları -->
         <attr name="sbButton1Icon" format="reference" />
         <attr name="sbButton1Text" format="string" />
+        <attr name="sbButton1Selected" format="boolean" />
+        <attr name="sbButton1Activated" format="boolean" />
+        <attr name="sbButton1Enabled" format="boolean" />
 
         <attr name="sbButton2Icon" format="reference" />
         <attr name="sbButton2Text" format="string" />
+        <attr name="sbButton2Selected" format="boolean" />
+        <attr name="sbButton2Activated" format="boolean" />
+        <attr name="sbButton2Enabled" format="boolean" />
 
         <attr name="sbButton3Icon" format="reference" />
         <attr name="sbButton3Text" format="string" />
+        <attr name="sbButton3Selected" format="boolean" />
+        <attr name="sbButton3Activated" format="boolean" />
+        <attr name="sbButton3Enabled" format="boolean" />
 
         <attr name="sbButton4Icon" format="reference" />
         <attr name="sbButton4Text" format="string" />
+        <attr name="sbButton4Selected" format="boolean" />
+        <attr name="sbButton4Activated" format="boolean" />
+        <attr name="sbButton4Enabled" format="boolean" />
     </declare-styleable>
 </resources>

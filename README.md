@@ -176,9 +176,15 @@ segmentedBar.setOnExpandChangeListener { isExpanded ->
     // Responding to expand/collapse animation state
 }
 
-// Selection & Dynamic Updates
+// Selection & State Management
 segmentedBar.selectButton(index = 1)
+segmentedBar.clearSelection() // Deselects all buttons
+segmentedBar.setButtonSelected(index = 0, selected = true)
+segmentedBar.setButtonActivated(index = 0, activated = true)
+segmentedBar.setButtonEnabled(index = 0, enabled = false)
 val selectedIndex = segmentedBar.getSelectedButtonIndex()
+
+// Dynamic Text & Icon Updates
 segmentedBar.setButtonText(0, "New Title")
 segmentedBar.setButtonIcon(0, R.drawable.ic_new_icon)
 ```
@@ -191,9 +197,14 @@ segmentedBar.setButtonIcon(0, R.drawable.ic_new_icon)
 |---|---|---|---|
 | `app:sbStyle` | `enum` | `horizontal` | Button bar layout style (`horizontal`, `vertical`, `circular`, `pill`, `expandable`) |
 | `app:sbButtonCount` | `integer` | `2` (or `3`) | Total number of buttons (`1` to `4`) |
+| `app:sbSelectedIndex` | `integer` | `0` | Initial selected button index (`-1` for none) |
+| `app:sbPillActivated` | `boolean` | `false` | Initial locked/active state for pill buttons |
 | `app:sbButton1Style` .. `app:sbButton4Style` | `enum` | `horizontal` | Individual button style for hybrid bars (`horizontal`, `circular`, `pill`) |
 | `app:sbButton1Icon` .. `app:sbButton4Icon` | `reference` | `@null` | Icon resource drawable for the corresponding button |
 | `app:sbButton1Text` .. `app:sbButton4Text` | `string` | `@null` | Text label for the corresponding button |
+| `app:sbButton1Selected` .. `app:sbButton4Selected` | `boolean` | `false` (btn 1: `true`) | Initial selection state (`isSelected`) per button |
+| `app:sbButton1Activated` .. `app:sbButton4Activated` | `boolean` | `false` | Initial activation state (`isActivated`) per button |
+| `app:sbButton1Enabled` .. `app:sbButton4Enabled` | `boolean` | `true` | Enable/disable state (`isEnabled`) per button |
 | `app:sbAutoSelect` | `boolean` | `true` | Automatically toggle `isSelected` on tap |
 | `app:sbMaxWidth` | `dimension` | `match_parent` | Optional maximum width cap for responsive layouts |
 | `app:sbPillType` | `enum` | `next` | Action type for pill style (`next`, `back`, `text`) |

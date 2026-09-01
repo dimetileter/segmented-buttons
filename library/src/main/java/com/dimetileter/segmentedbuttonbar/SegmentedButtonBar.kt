@@ -14,11 +14,12 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.core.content.ContextCompat
 
 /**
- * SegmentedButtonBar — Özelleştirilebilir, hibrit stilleri destekleyen dinamik Segmented Buton bileşeni.
- * SegmentedButtonBar — Customizable, dynamic Segmented Button component with hybrid/mixed style support.
+ * SegmentedButtonBar — Özelleştirilebilir, hibrit ve XML durum (selected, activated, enabled) kontrollü Segmented Buton bileşeni.
+ * SegmentedButtonBar — Customizable, dynamic Segmented Button component with XML-first state control (selected, activated, enabled).
  */
 class SegmentedButtonBar @JvmOverloads constructor(
     context: Context,
@@ -117,9 +118,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
     /**
      * Yatay segmented buton çubuğunu yapılandırır.
-     * Standart ve hibrit (ör. 2 yatay + 1 dairesel) butonları destekler.
      * Configures the horizontal segmented button bar.
-     * Supports standard and hybrid (e.g. 2 horizontal + 1 circular) buttons.
      */
     private fun setupHorizontal(ta: TypedArray) {
         orientation = HORIZONTAL
@@ -133,6 +132,12 @@ class SegmentedButtonBar @JvmOverloads constructor(
         val minWidth = context.resources.getDimensionPixelSize(R.dimen.sb_button_min_width)
         val circularHybridSize = context.resources.getDimensionPixelSize(R.dimen.sb_circular_button_hybrid_size)
 
+        val barSelectedIndex = if (ta.hasValue(R.styleable.SegmentedButtonBar_sbSelectedIndex)) {
+            ta.getInt(R.styleable.SegmentedButtonBar_sbSelectedIndex, 0)
+        } else {
+            null
+        }
+
         setPadding(barPadding, barPadding, barPadding, barPadding)
         removeAllViews()
         buttonViews.clear()
@@ -141,6 +146,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
         for (i in 0 until buttonCount) {
             val (iconRes, textVal) = getButtonAttributes(ta, i)
+            val (explicitSelected, explicitActivated, explicitEnabled) = getButtonStateAttributes(ta, i)
             val buttonStyle = getButtonStyle(ta, i)
 
             val buttonIndex = i
@@ -161,13 +167,17 @@ class SegmentedButtonBar @JvmOverloads constructor(
                     }
                 }
                 itemView.layoutParams = params
-                itemView.isSelected = false
+
+                val isSelectedVal = explicitSelected ?: (barSelectedIndex == buttonIndex)
+                itemView.isSelected = isSelectedVal
+                itemView.isActivated = explicitActivated
+                itemView.isEnabled = explicitEnabled
 
                 itemView.setOnClickListener {
                     buttonClickListeners[buttonIndex]?.invoke()
                 }
             } else {
-                // Standart Yatay Buton (Ağırlıklı / Flexible Horizontal Button)
+                // Standart Yatay Buton / Flexible Horizontal Button
                 itemView = inflater.inflate(R.layout.sb_button_horizontal_item, this, false)
                 val iconView = itemView.findViewById<ImageView>(R.id.sb_item_icon)
                 val textView = itemView.findViewById<TextView>(R.id.sb_item_text)
@@ -216,10 +226,21 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 itemView.minimumWidth = minWidth
                 itemView.layoutParams = params
 
-                itemView.isSelected = (buttonIndex == 0)
+                val isSelectedVal = explicitSelected ?: (barSelectedIndex?.let { it == buttonIndex } ?: (buttonIndex == 0))
+                itemView.isSelected = isSelectedVal
+                itemView.isActivated = explicitActivated
+                itemView.isEnabled = explicitEnabled
+
+                if (isSelectedVal) {
+                    selectedIndex = buttonIndex
+                }
+
                 itemView.setOnClickListener {
                     if (autoSelect) {
                         selectButton(buttonIndex)
+                    }
+                    if (isSelectedVal) {
+                        selectedIndex = buttonIndex
                     }
                     buttonClickListeners[buttonIndex]?.invoke()
                 }
@@ -227,6 +248,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
             buttonViews.add(itemView)
             addView(itemView)
+        }
+
+        if (buttonViews.none { it.isSelected }) {
+            selectedIndex = -1
         }
     }
 
@@ -245,6 +270,12 @@ class SegmentedButtonBar @JvmOverloads constructor(
         val buttonWidth = context.resources.getDimensionPixelSize(R.dimen.sb_vertical_button_width)
         val buttonHeight = context.resources.getDimensionPixelSize(R.dimen.sb_vertical_button_height)
 
+        val barSelectedIndex = if (ta.hasValue(R.styleable.SegmentedButtonBar_sbSelectedIndex)) {
+            ta.getInt(R.styleable.SegmentedButtonBar_sbSelectedIndex, 0)
+        } else {
+            null
+        }
+
         setPadding(barPadding, barPadding, barPadding, barPadding)
         removeAllViews()
         buttonViews.clear()
@@ -257,6 +288,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
             val textView = itemView.findViewById<TextView>(R.id.sb_vertical_text)
 
             val (iconRes, textVal) = getButtonAttributes(ta, i)
+            val (explicitSelected, explicitActivated, explicitEnabled) = getButtonStateAttributes(ta, i)
             val hasIcon = (iconRes != 0)
             val hasText = !textVal.isNullOrEmpty()
 
@@ -299,7 +331,15 @@ class SegmentedButtonBar @JvmOverloads constructor(
             itemView.layoutParams = params
 
             val buttonIndex = i
-            itemView.isSelected = (buttonIndex == 0)
+            val isSelectedVal = explicitSelected ?: (barSelectedIndex?.let { it == buttonIndex } ?: (buttonIndex == 0))
+            itemView.isSelected = isSelectedVal
+            itemView.isActivated = explicitActivated
+            itemView.isEnabled = explicitEnabled
+
+            if (isSelectedVal) {
+                selectedIndex = buttonIndex
+            }
+
             itemView.setOnClickListener {
                 if (autoSelect) {
                     selectButton(buttonIndex)
@@ -309,6 +349,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
             buttonViews.add(itemView)
             addView(itemView)
+        }
+
+        if (buttonViews.none { it.isSelected }) {
+            selectedIndex = -1
         }
     }
 
@@ -334,12 +378,16 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
         val customIcon = ta.getResourceId(R.styleable.SegmentedButtonBar_sbButton1Icon, 0)
         val customText = ta.getString(R.styleable.SegmentedButtonBar_sbButton1Text)
+        val (explicitSelected, explicitActivated, explicitEnabled) = getButtonStateAttributes(ta, 0)
 
         val finalIcon = if (customIcon != 0) customIcon else R.drawable.ic_sb_arrow_next
         iconView.setImageResource(finalIcon)
         circularView.contentDescription = customText ?: context.getString(R.string.sb_cd_circular)
 
         circularView.layoutParams = LayoutParams(circularSize, circularSize)
+        circularView.isSelected = explicitSelected ?: false
+        circularView.isActivated = explicitActivated
+        circularView.isEnabled = explicitEnabled
 
         circularView.setOnClickListener {
             buttonClickListeners[0]?.invoke()
@@ -374,6 +422,12 @@ class SegmentedButtonBar @JvmOverloads constructor(
         val customIcon = ta.getResourceId(R.styleable.SegmentedButtonBar_sbButton1Icon, 0)
         val customText = ta.getString(R.styleable.SegmentedButtonBar_sbButton1Text)
 
+        val initialPillActivated = ta.getBoolean(
+            R.styleable.SegmentedButtonBar_sbPillActivated,
+            ta.getBoolean(R.styleable.SegmentedButtonBar_sbButton1Activated, false)
+        )
+        val (explicitSelected, _, explicitEnabled) = getButtonStateAttributes(ta, 0)
+
         when (pillType) {
             PILL_NEXT -> {
                 val iconRes = if (customIcon != 0) customIcon else R.drawable.ic_sb_arrow_next
@@ -398,7 +452,9 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
 
         pillView.layoutParams = LayoutParams(minWidth, buttonHeight)
-        pillView.isActivated = false
+        pillView.isSelected = explicitSelected ?: false
+        pillView.isActivated = initialPillActivated
+        pillView.isEnabled = explicitEnabled
 
         pillView.setOnClickListener {
             pillClickListener?.invoke()
@@ -433,6 +489,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
             val iconView = itemView.findViewById<ImageView>(R.id.sb_circular_icon)
 
             val (iconRes, textVal) = getButtonAttributes(ta, i)
+            val (explicitSelected, explicitActivated, explicitEnabled) = getButtonStateAttributes(ta, i)
             val finalIcon = if (iconRes != 0) iconRes else R.drawable.ic_sb_arrow_next
             iconView.setImageResource(finalIcon)
 
@@ -444,6 +501,9 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 }
             }
             itemView.layoutParams = params
+            itemView.isSelected = explicitSelected ?: false
+            itemView.isActivated = explicitActivated
+            itemView.isEnabled = explicitEnabled
 
             val buttonIndex = i
             if (buttonIndex == 0) {
@@ -499,6 +559,32 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 ta.getString(R.styleable.SegmentedButtonBar_sbButton4Text)
             )
             else -> Pair(0, null)
+        }
+    }
+
+    private fun getButtonStateAttributes(ta: TypedArray, index: Int): Triple<Boolean?, Boolean, Boolean> {
+        return when (index) {
+            0 -> Triple(
+                if (ta.hasValue(R.styleable.SegmentedButtonBar_sbButton1Selected)) ta.getBoolean(R.styleable.SegmentedButtonBar_sbButton1Selected, false) else null,
+                ta.getBoolean(R.styleable.SegmentedButtonBar_sbButton1Activated, false),
+                ta.getBoolean(R.styleable.SegmentedButtonBar_sbButton1Enabled, true)
+            )
+            1 -> Triple(
+                if (ta.hasValue(R.styleable.SegmentedButtonBar_sbButton2Selected)) ta.getBoolean(R.styleable.SegmentedButtonBar_sbButton2Selected, false) else null,
+                ta.getBoolean(R.styleable.SegmentedButtonBar_sbButton2Activated, false),
+                ta.getBoolean(R.styleable.SegmentedButtonBar_sbButton2Enabled, true)
+            )
+            2 -> Triple(
+                if (ta.hasValue(R.styleable.SegmentedButtonBar_sbButton3Selected)) ta.getBoolean(R.styleable.SegmentedButtonBar_sbButton3Selected, false) else null,
+                ta.getBoolean(R.styleable.SegmentedButtonBar_sbButton3Activated, false),
+                ta.getBoolean(R.styleable.SegmentedButtonBar_sbButton3Enabled, true)
+            )
+            3 -> Triple(
+                if (ta.hasValue(R.styleable.SegmentedButtonBar_sbButton4Selected)) ta.getBoolean(R.styleable.SegmentedButtonBar_sbButton4Selected, false) else null,
+                ta.getBoolean(R.styleable.SegmentedButtonBar_sbButton4Activated, false),
+                ta.getBoolean(R.styleable.SegmentedButtonBar_sbButton4Enabled, true)
+            )
+            else -> Triple(null, false, true)
         }
     }
 
@@ -641,12 +727,12 @@ class SegmentedButtonBar @JvmOverloads constructor(
     }
 
     // ==========================================
-    // Public API — Selection & Click Handlers
+    // Public API — Selection & State Management
     // ==========================================
 
     /**
-     * Belirtilen indisteki butonu seçili yapar (0 tabanlı).
-     * Selects the button at the specified index (0-based).
+     * Belirtilen indisteki butonu tekil olarak seçili yapar (0 tabanlı).
+     * Selects the button at the specified index (0-based) exclusively.
      */
     fun selectButton(index: Int) {
         if (index !in buttonViews.indices) return
@@ -657,10 +743,66 @@ class SegmentedButtonBar @JvmOverloads constructor(
     }
 
     /**
-     * Seçili butonun indisini döner.
-     * Returns the index of the currently selected button.
+     * Tüm butonların seçimini kaldırır.
+     * Clears selection from all buttons.
+     */
+    fun clearSelection() {
+        selectedIndex = -1
+        buttonViews.forEach { it.isSelected = false }
+    }
+
+    /**
+     * Seçili butonun indisini döner (hiçbiri seçili değilse -1).
+     * Returns the index of the currently selected button (-1 if none).
      */
     fun getSelectedButtonIndex(): Int = selectedIndex
+
+    /**
+     * Belirtilen butonun seçim durumunu ayarlar.
+     * Sets the selection state of a specific button.
+     */
+    fun setButtonSelected(index: Int, selected: Boolean) {
+        buttonViews.getOrNull(index)?.isSelected = selected
+        if (selected) {
+            selectedIndex = index
+        } else if (selectedIndex == index) {
+            selectedIndex = -1
+        }
+    }
+
+    /**
+     * Belirtilen butonun seçili olup olmadığını döner.
+     * Returns whether the button at the given index is selected.
+     */
+    fun isButtonSelected(index: Int): Boolean = buttonViews.getOrNull(index)?.isSelected ?: false
+
+    /**
+     * Belirtilen butonun kilit/aktiflik (isActivated) durumunu ayarlar.
+     * Sets the activation (isActivated) state of a specific button.
+     */
+    fun setButtonActivated(index: Int, activated: Boolean) {
+        buttonViews.getOrNull(index)?.isActivated = activated
+    }
+
+    /**
+     * Belirtilen butonun aktiflik durumunu döner.
+     * Returns whether the button at the given index is activated.
+     */
+    fun isButtonActivated(index: Int): Boolean = buttonViews.getOrNull(index)?.isActivated ?: false
+
+    /**
+     * Belirtilen butonun etkin/devre dışı (isEnabled) durumunu ayarlar.
+     * Sets the enabled state of a specific button.
+     */
+    fun setButtonEnabled(index: Int, enabled: Boolean) {
+        buttonViews.getOrNull(index)?.isEnabled = enabled
+    }
+
+    /**
+     * Belirtilen butonun etkin olup olmadığını döner.
+     * Returns whether the button at the given index is enabled.
+     */
+    fun isButtonEnabled(index: Int): Boolean = buttonViews.getOrNull(index)?.isEnabled ?: false
 
     /**
      * Mevcut stili döner.
@@ -673,9 +815,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
      * Sets the activation (lock/unlock) state of the pill button.
      */
     fun setPillActivated(active: Boolean) {
-        if (buttonViews.isNotEmpty()) {
-            buttonViews[0].isActivated = active
-        }
+        setButtonActivated(0, active)
     }
 
     /**
@@ -683,7 +823,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
      * Returns whether the pill button is activated.
      */
     fun isPillActivated(): Boolean {
-        return buttonViews.firstOrNull()?.isActivated ?: false
+        return isButtonActivated(0)
     }
 
     /**
@@ -707,13 +847,13 @@ class SegmentedButtonBar @JvmOverloads constructor(
      * Convenience methods to update specific button texts.
      */
     fun setButton1Text(text: CharSequence?) = setButtonText(0, text)
-    fun setButton1Text(resId: Int) = setButtonText(0, context.getString(resId))
+    fun setButton1Text(@StringRes resId: Int) = setButtonText(0, context.getString(resId))
     fun setButton2Text(text: CharSequence?) = setButtonText(1, text)
-    fun setButton2Text(resId: Int) = setButtonText(1, context.getString(resId))
+    fun setButton2Text(@StringRes resId: Int) = setButtonText(1, context.getString(resId))
     fun setButton3Text(text: CharSequence?) = setButtonText(2, text)
-    fun setButton3Text(resId: Int) = setButtonText(2, context.getString(resId))
+    fun setButton3Text(@StringRes resId: Int) = setButtonText(2, context.getString(resId))
     fun setButton4Text(text: CharSequence?) = setButtonText(3, text)
-    fun setButton4Text(resId: Int) = setButtonText(3, context.getString(resId))
+    fun setButton4Text(@StringRes resId: Int) = setButtonText(3, context.getString(resId))
 
     /**
      * Belirli buton ikonlarını güncellemek için kısayol fonksiyonları.
