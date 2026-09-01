@@ -2,6 +2,7 @@ package com.dimetileter.segmentedbuttonbar
 
 import android.content.Context
 import android.view.ContextThemeWrapper
+import android.widget.LinearLayout
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import org.junit.Before
@@ -11,8 +12,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * SegmentedButtonBar durum, seçim ve etkileşim birim testleri.
- * Unit tests for SegmentedButtonBar state, selection, and interactions.
+ * SegmentedButtonBar durum, seçim ve stil birim testleri.
+ * Unit tests for SegmentedButtonBar state, selection, and styles.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -38,6 +39,7 @@ class SegmentedButtonBarTest {
         assertThat(bar.getSelectedButtonIndex()).isEqualTo(0)
         assertThat(bar.getButton(0)?.isSelected).isTrue()
         assertThat(bar.getButton(1)?.isSelected).isFalse()
+        assertThat(bar.orientation).isEqualTo(LinearLayout.HORIZONTAL)
     }
 
     /**
@@ -123,5 +125,19 @@ class SegmentedButtonBarTest {
         val button = bar.getButton(0)
         val textView = button?.findViewById<android.widget.TextView>(R.id.sb_item_text)
         assertThat(textView?.text.toString()).isEqualTo("Updated Text")
+    }
+
+    /**
+     * Dinamik ikon güncellemesinin çalıştığını doğrular.
+     * Verifies dynamic icon updates on button items.
+     */
+    @Test
+    fun verifyDynamicIconUpdate() {
+        val bar = SegmentedButtonBar(context)
+        bar.setButtonIcon(0, R.drawable.ic_sb_arrow_next)
+
+        val button = bar.getButton(0)
+        val iconView = button?.findViewById<android.widget.ImageView>(R.id.sb_item_icon)
+        assertThat(iconView?.visibility).isEqualTo(android.view.View.VISIBLE)
     }
 }

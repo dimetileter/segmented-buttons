@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Single Circular Button Item / Tekil Dairesel Buton Öğesi -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/sb_circular_root"
+    android:layout_width="@dimen/sb_circular_button_size"
+    android:layout_height="@dimen/sb_circular_button_size"
+    android:padding="@dimen/sb_button_padding"
+    android:background="@drawable/state_segmented_circular_button"
+    android:foreground="?android:attr/selectableItemBackgroundBorderless"
+    android:clipToOutline="true"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- Circular Icon / Dairesel İkon -->
+    <ImageView
+        android:id="@+id/sb_circular_icon"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="center"
+        android:contentDescription="@null"
+        tools:src="@drawable/ic_sb_arrow_next" />
+</FrameLayout>

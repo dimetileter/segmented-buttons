@@ -9,7 +9,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.annotation.DrawableRes
-import androidx.annotation.StringRes
 import androidx.core.content.ContextCompat
 
 /**
@@ -42,6 +41,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
         private const val MIN_BUTTON_COUNT = 1
         private const val MAX_BUTTON_COUNT = 4
         private const val DEFAULT_BUTTON_COUNT = 2
+        private const val DEFAULT_VERTICAL_COUNT = 3
     }
 
     private var currentStyle: Int = STYLE_HORIZONTAL
@@ -70,7 +70,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
      */
     private fun readAttributesAndSetup(ta: TypedArray) {
         currentStyle = ta.getInt(R.styleable.SegmentedButtonBar_sbStyle, STYLE_HORIZONTAL)
-        val rawCount = ta.getInt(R.styleable.SegmentedButtonBar_sbButtonCount, DEFAULT_BUTTON_COUNT)
+        val defaultCount = if (currentStyle == STYLE_VERTICAL) DEFAULT_VERTICAL_COUNT else DEFAULT_BUTTON_COUNT
+        val rawCount = ta.getInt(R.styleable.SegmentedButtonBar_sbButtonCount, defaultCount)
         buttonCount = rawCount.coerceIn(MIN_BUTTON_COUNT, MAX_BUTTON_COUNT)
         autoSelect = ta.getBoolean(R.styleable.SegmentedButtonBar_sbAutoSelect, true)
         pillType = ta.getInt(R.styleable.SegmentedButtonBar_sbPillType, PILL_NEXT)
@@ -84,6 +85,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
         when (currentStyle) {
             STYLE_HORIZONTAL -> setupHorizontal(ta)
+            STYLE_VERTICAL -> setupVertical(ta)
+            STYLE_CIRCULAR -> setupCircular(ta)
             STYLE_PILL -> setupPill(ta)
             else -> setupHorizontal(ta)
         }
@@ -152,6 +155,94 @@ class SegmentedButtonBar @JvmOverloads constructor(
             buttonViews.add(itemView)
             addView(itemView)
         }
+    }
+
+    /**
+     * Dikey segmented buton çubuğunu yapılandırır.
+     * Configures the vertical segmented button bar.
+     */
+    private fun setupVertical(ta: TypedArray) {
+        orientation = VERTICAL
+        clipToPadding = true
+        background = ContextCompat.getDrawable(context, R.drawable.bg_segmented_button_bar)
+
+        val barPadding = context.resources.getDimensionPixelSize(R.dimen.sb_bar_padding)
+        val buttonGap = context.resources.getDimensionPixelSize(R.dimen.sb_button_gap)
+        val buttonWidth = context.resources.getDimensionPixelSize(R.dimen.sb_vertical_button_width)
+        val buttonHeight = context.resources.getDimensionPixelSize(R.dimen.sb_vertical_button_height)
+
+        setPadding(barPadding, barPadding, barPadding, barPadding)
+        removeAllViews()
+        buttonViews.clear()
+
+        val inflater = LayoutInflater.from(context)
+
+        for (i in 0 until buttonCount) {
+            val itemView = inflater.inflate(R.layout.sb_button_vertical_item, this, false)
+            val iconView = itemView.findViewById<ImageView>(R.id.sb_vertical_icon)
+
+            val (iconRes, textVal) = getButtonAttributes(ta, i)
+            val finalIcon = if (iconRes != 0) iconRes else R.drawable.ic_sb_arrow_next
+            iconView.setImageResource(finalIcon)
+
+            itemView.contentDescription = textVal ?: getDefaultContentDescription(i)
+
+            val params = LayoutParams(buttonWidth, buttonHeight).apply {
+                if (i > 0) {
+                    topMargin = buttonGap
+                }
+            }
+            itemView.layoutParams = params
+
+            val buttonIndex = i
+            itemView.isSelected = (buttonIndex == 0)
+            itemView.setOnClickListener {
+                if (autoSelect) {
+                    selectButton(buttonIndex)
+                }
+                buttonClickListeners[buttonIndex]?.invoke()
+            }
+
+            buttonViews.add(itemView)
+            addView(itemView)
+        }
+    }
+
+    /**
+     * Dairesel tekil buton stilini yapılandırır.
+     * Configures the circular single button style.
+     */
+    private fun setupCircular(ta: TypedArray) {
+        orientation = HORIZONTAL
+        clipToPadding = true
+        background = ContextCompat.getDrawable(context, R.drawable.bg_segmented_button_bar)
+
+        val barPadding = context.resources.getDimensionPixelSize(R.dimen.sb_bar_padding)
+        val circularSize = context.resources.getDimensionPixelSize(R.dimen.sb_circular_button_size)
+
+        setPadding(barPadding, barPadding, barPadding, barPadding)
+        removeAllViews()
+        buttonViews.clear()
+
+        val inflater = LayoutInflater.from(context)
+        val circularView = inflater.inflate(R.layout.sb_button_circular_item, this, false)
+        val iconView = circularView.findViewById<ImageView>(R.id.sb_circular_icon)
+
+        val customIcon = ta.getResourceId(R.styleable.SegmentedButtonBar_sbButton1Icon, 0)
+        val customText = ta.getString(R.styleable.SegmentedButtonBar_sbButton1Text)
+
+        val finalIcon = if (customIcon != 0) customIcon else R.drawable.ic_sb_arrow_next
+        iconView.setImageResource(finalIcon)
+        circularView.contentDescription = customText ?: context.getString(R.string.sb_cd_circular)
+
+        circularView.layoutParams = LayoutParams(circularSize, circularSize)
+
+        circularView.setOnClickListener {
+            buttonClickListeners[0]?.invoke()
+        }
+
+        buttonViews.add(circularView)
+        addView(circularView)
     }
 
     /**
@@ -282,6 +373,12 @@ class SegmentedButtonBar @JvmOverloads constructor(
     fun getSelectedButtonIndex(): Int = selectedIndex
 
     /**
+     * Mevcut stili döner.
+     * Returns the current button bar style.
+     */
+    fun getStyle(): Int = currentStyle
+
+    /**
      * Pill butonunun kilit (aktiflik) durumunu ayarlar.
      * Sets the activation (lock/unlock) state of the pill button.
      */
@@ -348,6 +445,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
     fun setButtonIcon(index: Int, @DrawableRes iconRes: Int) {
         val button = buttonViews.getOrNull(index) ?: return
         val iconView = button.findViewById<ImageView>(R.id.sb_item_icon)
+            ?: button.findViewById<ImageView>(R.id.sb_vertical_icon)
+            ?: button.findViewById<ImageView>(R.id.sb_circular_icon)
             ?: button.findViewById<ImageView>(R.id.sb_pill_icon)
         iconView?.let {
             if (iconRes != 0) {
