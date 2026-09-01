@@ -1,0 +1,37 @@
+[versions]
+agp = "9.2.1"
+coreKtx = "1.15.0"
+appcompat = "1.7.1"
+material = "1.12.0"
+activityKtx = "1.9.3"
+constraintlayout = "2.2.1"
+dynamicanimation = "1.0.0-alpha03"
+
+# Test dependencies
+junit = "4.13.2"
+junitVersion = "1.3.0"
+espressoCore = "3.5.1"
+androidxTestCore = "1.6.1"
+robolectric = "4.12.1"
+truth = "1.4.2"
+
+[libraries]
+# Core AndroidX & Material
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+androidx-activity-ktx = { group = "androidx.activity", name = "activity-ktx", version.ref = "activityKtx" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+androidx-dynamicanimation = { group = "androidx.dynamicanimation", name = "dynamicanimation-ktx", version.ref = "dynamicanimation" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+
+# Testing
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-test-core = { group = "androidx.test", name = "core-ktx", version.ref = "androidxTestCore" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+truth = { group = "com.google.truth", name = "truth", version.ref = "truth" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }

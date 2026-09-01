@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      SegmentedButtonBar Custom Attributes
+      SegmentedButtonBar Özel XML Nitelikleri
+    -->
+    <declare-styleable name="SegmentedButtonBar">
+        <!-- Layout style / Düzen stili -->
+        <attr name="sbStyle" format="enum">
+            <enum name="horizontal" value="0" />
+            <enum name="vertical" value="1" />
+            <enum name="circular" value="2" />
+            <enum name="pill" value="3" />
+            <enum name="expandable" value="4" />
+        </attr>
+
+        <!-- Button count (1-4) / Buton sayısı -->
+        <attr name="sbButtonCount" format="integer" />
+
+        <!-- Automatic single-selection behavior / Otomatik seçim davranışı -->
+        <attr name="sbAutoSelect" format="boolean" />
+
+        <!-- Optional maximum bar width / İsteğe bağlı maksimum çubuk genişliği -->
+        <attr name="sbMaxWidth" format="dimension" />
+
+        <!-- Pill style action type / Pill stili eylem türü -->
+        <attr name="sbPillType" format="enum">
+            <enum name="next" value="0" />
+            <enum name="back" value="1" />
+            <enum name="text" value="2" />
+        </attr>
+
+        <!-- Expansion direction for expandable style / Genişleme yönü -->
+        <attr name="sbExpandDirection" format="enum">
+            <enum name="end" value="0" />
+            <enum name="start" value="1" />
+        </attr>
+
+        <!-- Bar elevation & shadow / Çubuk gölge ve yükseklik seviyesi -->
+        <attr name="sbElevation" format="dimension" />
+
+        <!-- Per-button resources (1..4) / Buton kaynakları -->
+        <attr name="sbButton1Icon" format="reference" />
+        <attr name="sbButton1Text" format="string" />
+
+        <attr name="sbButton2Icon" format="reference" />
+        <attr name="sbButton2Text" format="string" />
+
+        <attr name="sbButton3Icon" format="reference" />
+        <attr name="sbButton3Text" format="string" />
+
+        <attr name="sbButton4Icon" format="reference" />
+        <attr name="sbButton4Text" format="string" />
+    </declare-styleable>
+</resources>

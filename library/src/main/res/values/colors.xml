@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- SegmentedButtonBar Color Tokens (Light Theme / Açık Tema) -->
+    <color name="sb_bar_background">#3C787880</color>
+    <color name="sb_button_selected">#FFFFFF</color>
+    <color name="sb_button_unselected">@android:color/transparent</color>
+    <color name="sb_button_disabled">#1A0D0D0D</color>
+    <color name="sb_button_text">#333333</color>
+</resources>

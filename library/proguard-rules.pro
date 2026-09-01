@@ -1,0 +1,1 @@
+# SegmentedButtonBar library proguard rules

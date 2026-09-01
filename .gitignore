@@ -1,0 +1,37 @@
+# Gradle and Build Outputs
+.gradle/
+build/
+**/build/
+bin/
+out/
+
+# Android Studio / IntelliJ IDEA
+*.iml
+.idea/
+.kotlin/
+*.ipr
+*.iws
+
+# Local configuration and properties
+local.properties
+.DS_Store
+Thumbs.db
+
+# Android build outputs & binaries
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.ap_
+*.aab
+*.aar
+*.dex
+*.class
+
+# Keystores & sensitive credentials
+*.jks
+*.keystore
+
+# Logs & profiling
+*.log
+*.hprof

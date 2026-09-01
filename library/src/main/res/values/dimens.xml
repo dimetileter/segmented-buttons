@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      SegmentedButtonBar Dimension Tokens
+      Corner Radius Formula: sb_button_radius = sb_bar_radius - sb_bar_padding (54dp = 60dp - 6dp)
+      Gap to Padding Ratio:  sb_button_gap = sb_bar_padding / 2 (3dp = 6dp / 2)
+    -->
+    <dimen name="sb_bar_radius">60dp</dimen>
+    <dimen name="sb_button_radius">54dp</dimen>
+    <dimen name="sb_bar_padding">6dp</dimen>
+    <dimen name="sb_button_gap">3dp</dimen>
+    <dimen name="sb_button_gap_pill">6dp</dimen>
+
+    <!-- Component Sizes -->
+    <dimen name="sb_button_height">32dp</dimen>
+    <dimen name="sb_button_min_width">80dp</dimen>
+    <dimen name="sb_button_icon_size">24dp</dimen>
+    <dimen name="sb_button_padding">4dp</dimen>
+    <dimen name="sb_button_gap_icon_text">2dp</dimen>
+    <dimen name="sb_vertical_button_width">32dp</dimen>
+    <dimen name="sb_vertical_button_height">48dp</dimen>
+    <dimen name="sb_circular_button_size">24dp</dimen>
+    <dimen name="sb_button_text_size">12sp</dimen>
+</resources>

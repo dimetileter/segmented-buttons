@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Library Name -->
+    <string name="sb_library_name">SegmentedButtonBar</string>
+
+    <!-- Default Accessibility Content Descriptions -->
+    <string name="sb_cd_button_1">Button 1</string>
+    <string name="sb_cd_button_2">Button 2</string>
+    <string name="sb_cd_button_3">Button 3</string>
+    <string name="sb_cd_button_4">Button 4</string>
+    <string name="sb_cd_next">Next</string>
+    <string name="sb_cd_back">Back</string>
+    <string name="sb_cd_circular">Action</string>
+</resources>
