@@ -26,7 +26,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Horizontal Style (2 Buttons)"
+            android:text="1. Horizontal Style (2 Buttons)"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -43,7 +43,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Horizontal Style (3 Buttons)"
+            android:text="2. Horizontal Style (3 Buttons)"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -61,7 +61,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Vertical Style (3 Buttons)"
+            android:text="3. Vertical Style (3 Buttons)"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -76,7 +76,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Circular Style (24dp Button)"
+            android:text="4. Circular Style (24dp Button)"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -86,11 +86,26 @@
             app:sbStyle="circular"
             android:layout_marginBottom="20dp" />
 
-        <!-- 5. Pill Style (Next Button) -->
+        <!-- 5. Expandable Animated Style -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Pill Style (Next Action)"
+            android:text="5. Expandable Animated Style"
+            android:layout_marginBottom="8dp" />
+
+        <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
+            android:id="@+id/expandableBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:sbStyle="expandable"
+            app:sbButtonCount="3"
+            android:layout_marginBottom="20dp" />
+
+        <!-- 6. Pill Style (Next Button) -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="6. Pill Style (Next Action)"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar

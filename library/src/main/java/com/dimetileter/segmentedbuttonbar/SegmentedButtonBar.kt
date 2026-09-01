@@ -1,10 +1,14 @@
 package com.dimetileter.segmentedbuttonbar
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.content.Context
 import android.content.res.TypedArray
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
+import android.view.animation.OvershootInterpolator
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -12,8 +16,8 @@ import androidx.annotation.DrawableRes
 import androidx.core.content.ContextCompat
 
 /**
- * SegmentedButtonBar — Özelleştirilebilir ve XML tabanlı Segmented Buton bileşeni.
- * SegmentedButtonBar — Customizable and XML-configurable Segmented Button component.
+ * SegmentedButtonBar — Özelleştirilebilir, XML tabanlı ve animasyonlu Segmented Buton bileşeni.
+ * SegmentedButtonBar — Customizable, XML-configurable, and animated Segmented Button component.
  */
 class SegmentedButtonBar @JvmOverloads constructor(
     context: Context,
@@ -42,13 +46,20 @@ class SegmentedButtonBar @JvmOverloads constructor(
         private const val MAX_BUTTON_COUNT = 4
         private const val DEFAULT_BUTTON_COUNT = 2
         private const val DEFAULT_VERTICAL_COUNT = 3
+        private const val DEFAULT_EXPANDABLE_COUNT = 3
+        private const val ANIMATION_DURATION_MS = 300L
     }
 
     private var currentStyle: Int = STYLE_HORIZONTAL
     private var buttonCount: Int = DEFAULT_BUTTON_COUNT
     private var autoSelect: Boolean = true
     private var pillType: Int = PILL_NEXT
+    private var expandDirection: Int = EXPAND_END
     private var maxWidthPx: Int = -1
+
+    private var isExpanded: Boolean = false
+    private var isAnimating: Boolean = false
+    private var onExpandChangeListener: ((Boolean) -> Unit)? = null
 
     private val buttonViews = mutableListOf<View>()
     private val buttonClickListeners = mutableMapOf<Int, () -> Unit>()
@@ -70,11 +81,16 @@ class SegmentedButtonBar @JvmOverloads constructor(
      */
     private fun readAttributesAndSetup(ta: TypedArray) {
         currentStyle = ta.getInt(R.styleable.SegmentedButtonBar_sbStyle, STYLE_HORIZONTAL)
-        val defaultCount = if (currentStyle == STYLE_VERTICAL) DEFAULT_VERTICAL_COUNT else DEFAULT_BUTTON_COUNT
+        val defaultCount = when (currentStyle) {
+            STYLE_VERTICAL -> DEFAULT_VERTICAL_COUNT
+            STYLE_EXPANDABLE -> DEFAULT_EXPANDABLE_COUNT
+            else -> DEFAULT_BUTTON_COUNT
+        }
         val rawCount = ta.getInt(R.styleable.SegmentedButtonBar_sbButtonCount, defaultCount)
         buttonCount = rawCount.coerceIn(MIN_BUTTON_COUNT, MAX_BUTTON_COUNT)
         autoSelect = ta.getBoolean(R.styleable.SegmentedButtonBar_sbAutoSelect, true)
         pillType = ta.getInt(R.styleable.SegmentedButtonBar_sbPillType, PILL_NEXT)
+        expandDirection = ta.getInt(R.styleable.SegmentedButtonBar_sbExpandDirection, EXPAND_END)
         maxWidthPx = ta.getDimensionPixelSize(R.styleable.SegmentedButtonBar_sbMaxWidth, -1)
 
         val elevationVal = ta.getDimension(R.styleable.SegmentedButtonBar_sbElevation, 0f)
@@ -88,6 +104,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
             STYLE_VERTICAL -> setupVertical(ta)
             STYLE_CIRCULAR -> setupCircular(ta)
             STYLE_PILL -> setupPill(ta)
+            STYLE_EXPANDABLE -> setupExpandable(ta)
             else -> setupHorizontal(ta)
         }
     }
@@ -305,6 +322,69 @@ class SegmentedButtonBar @JvmOverloads constructor(
         addView(pillView)
     }
 
+    /**
+     * Animasyonlu genişleyen (Expandable) buton stilini yapılandırır.
+     * Configures the animated Expandable button style.
+     */
+    private fun setupExpandable(ta: TypedArray) {
+        orientation = HORIZONTAL
+        clipToPadding = true
+        background = ContextCompat.getDrawable(context, R.drawable.bg_segmented_button_bar)
+
+        val barPadding = context.resources.getDimensionPixelSize(R.dimen.sb_bar_padding)
+        val buttonGap = context.resources.getDimensionPixelSize(R.dimen.sb_button_gap)
+        val circularSize = context.resources.getDimensionPixelSize(R.dimen.sb_circular_button_size)
+
+        setPadding(barPadding, barPadding, barPadding, barPadding)
+        removeAllViews()
+        buttonViews.clear()
+
+        val inflater = LayoutInflater.from(context)
+
+        for (i in 0 until buttonCount) {
+            val itemView = inflater.inflate(R.layout.sb_button_circular_item, this, false)
+            val iconView = itemView.findViewById<ImageView>(R.id.sb_circular_icon)
+
+            val (iconRes, textVal) = getButtonAttributes(ta, i)
+            val finalIcon = if (iconRes != 0) iconRes else R.drawable.ic_sb_arrow_next
+            iconView.setImageResource(finalIcon)
+
+            itemView.contentDescription = textVal ?: getDefaultContentDescription(i)
+
+            val params = LayoutParams(circularSize, circularSize).apply {
+                if (i > 0) {
+                    marginStart = buttonGap
+                }
+            }
+            itemView.layoutParams = params
+
+            val buttonIndex = i
+            if (buttonIndex == 0) {
+                // Ana kanca butonu / Anchor button
+                itemView.visibility = View.VISIBLE
+                itemView.setOnClickListener {
+                    toggleExpand()
+                    buttonClickListeners[0]?.invoke()
+                }
+            } else {
+                // Genişleyince açılacak butonlar / Child buttons that appear on expansion
+                itemView.visibility = View.GONE
+                itemView.alpha = 0f
+                itemView.setOnClickListener {
+                    if (autoSelect) {
+                        selectButton(buttonIndex)
+                    }
+                    buttonClickListeners[buttonIndex]?.invoke()
+                }
+            }
+
+            buttonViews.add(itemView)
+            addView(itemView)
+        }
+
+        isExpanded = false
+    }
+
     private fun getButtonAttributes(ta: TypedArray, index: Int): Pair<Int, String?> {
         return when (index) {
             0 -> Pair(
@@ -348,6 +428,121 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
 
         super.onMeasure(targetWidthSpec, heightMeasureSpec)
+    }
+
+    // ==========================================
+    // Public API — Expandable Animation
+    // ==========================================
+
+    /**
+     * Expandable çubuğu genişletir.
+     * Expands the expandable button bar.
+     */
+    fun expand(animate: Boolean = true) {
+        if (currentStyle != STYLE_EXPANDABLE || isExpanded || isAnimating) return
+
+        if (!animate) {
+            for (i in 1 until buttonViews.size) {
+                val child = buttonViews[i]
+                child.visibility = View.VISIBLE
+                child.alpha = 1f
+                child.translationX = 0f
+            }
+            isExpanded = true
+            onExpandChangeListener?.invoke(true)
+            requestLayout()
+            return
+        }
+
+        isAnimating = true
+        for (i in 1 until buttonViews.size) {
+            val child = buttonViews[i]
+            child.visibility = View.VISIBLE
+            child.alpha = 0f
+            val startTranslation = if (expandDirection == EXPAND_START) 30f else -30f
+            child.translationX = startTranslation
+
+            val delay = ((i - 1) * 30L)
+            child.animate()
+                .alpha(1f)
+                .translationX(0f)
+                .setStartDelay(delay)
+                .setDuration(ANIMATION_DURATION_MS)
+                .setInterpolator(OvershootInterpolator(1.1f))
+                .setListener(if (i == buttonViews.size - 1) object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) {
+                        isAnimating = false
+                        isExpanded = true
+                        onExpandChangeListener?.invoke(true)
+                    }
+                } else null)
+                .start()
+        }
+    }
+
+    /**
+     * Expandable çubuğu kapatır (daraltır).
+     * Collapses the expandable button bar.
+     */
+    fun collapse(animate: Boolean = true) {
+        if (currentStyle != STYLE_EXPANDABLE || !isExpanded || isAnimating) return
+
+        if (!animate) {
+            for (i in 1 until buttonViews.size) {
+                val child = buttonViews[i]
+                child.visibility = View.GONE
+                child.alpha = 0f
+            }
+            isExpanded = false
+            onExpandChangeListener?.invoke(false)
+            requestLayout()
+            return
+        }
+
+        isAnimating = true
+        val totalChildren = buttonViews.size - 1
+        for (i in 1 until buttonViews.size) {
+            val child = buttonViews[i]
+            val endTranslation = if (expandDirection == EXPAND_START) 20f else -20f
+
+            child.animate()
+                .alpha(0f)
+                .translationX(endTranslation)
+                .setDuration(ANIMATION_DURATION_MS / 2)
+                .setListener(object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) {
+                        child.visibility = View.GONE
+                        if (i == totalChildren) {
+                            isAnimating = false
+                            isExpanded = false
+                            onExpandChangeListener?.invoke(false)
+                        }
+                    }
+                })
+                .start()
+        }
+    }
+
+    /**
+     * Expandable çubuğun genişleme durumunu tersine çevirir.
+     * Toggles expansion state of the expandable bar.
+     */
+    fun toggleExpand(animate: Boolean = true) {
+        if (isExpanded) collapse(animate) else expand(animate)
+    }
+
+    /**
+     * Expandable çubuğun açık olup olmadığını döner.
+     * Returns whether the expandable bar is expanded.
+     */
+    fun isExpanded(): Boolean = isExpanded
+
+    /**
+     * Expandable çubuğun açılma/kapanma durum değişikliği dinleyicisini atar.
+     * Sets expansion change listener.
+     */
+    fun setOnExpandChangeListener(listener: (Boolean) -> Unit) {
+        onExpandChangeListener = listener
     }
 
     // ==========================================

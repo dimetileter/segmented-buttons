@@ -5,8 +5,8 @@ import androidx.appcompat.app.AppCompatActivity
 import com.dimetileter.segmentedbuttons.databinding.ActivityMainBinding
 
 /**
- * SegmentedButtonBar bileşenlerinin tüm stillerini gösteren örnek etkinlik.
- * Demo activity showcasing all styles of SegmentedButtonBar components.
+ * SegmentedButtonBar bileşenlerinin tüm 5 stilini gösteren örnek etkinlik.
+ * Demo activity showcasing all 5 styles of SegmentedButtonBar components.
  */
 class MainActivity : AppCompatActivity() {
 
@@ -54,6 +54,17 @@ class MainActivity : AppCompatActivity() {
         // Circular single-button bar
         binding.circularBar.setOnButton1Click {
             binding.statusText.text = "Status: Circular button clicked"
+        }
+
+        // Expandable animated bar
+        binding.expandableBar.setOnExpandChangeListener { isExpanded ->
+            binding.statusText.text = "Status: Expandable bar (Expanded: $isExpanded)"
+        }
+        binding.expandableBar.setOnButton2Click {
+            binding.statusText.text = "Status: Expandable -> Button 2 clicked"
+        }
+        binding.expandableBar.setOnButton3Click {
+            binding.statusText.text = "Status: Expandable -> Button 3 clicked"
         }
 
         // Pill button bar
