@@ -2,22 +2,24 @@ package com.dimetileter.segmentedbuttonbar
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
-import android.animation.ValueAnimator
 import android.content.Context
 import android.content.res.TypedArray
 import android.util.AttributeSet
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup.MarginLayoutParams
 import android.view.animation.OvershootInterpolator
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.annotation.DrawableRes
 import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat
 
 /**
- * SegmentedButtonBar — Özelleştirilebilir, XML tabanlı ve animasyonlu Segmented Buton bileşeni.
- * SegmentedButtonBar — Customizable, XML-configurable, and animated Segmented Button component.
+ * SegmentedButtonBar — Özelleştirilebilir, XML tabanlı, metin ve ikon odaklı dinamik Segmented Buton bileşeni.
+ * SegmentedButtonBar — Customizable, XML-configurable, text & icon flexible dynamic Segmented Button component.
  */
 class SegmentedButtonBar @JvmOverloads constructor(
     context: Context,
@@ -111,7 +113,9 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
     /**
      * Yatay segmented buton çubuğunu yapılandırır.
+     * Metin veya ikon durumuna göre ortalama ve hizalama kurallarını uygular.
      * Configures the horizontal segmented button bar.
+     * Applies centering and alignment rules based on text/icon presence.
      */
     private fun setupHorizontal(ta: TypedArray) {
         orientation = HORIZONTAL
@@ -120,6 +124,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
         val barPadding = context.resources.getDimensionPixelSize(R.dimen.sb_bar_padding)
         val buttonGap = context.resources.getDimensionPixelSize(R.dimen.sb_button_gap)
+        val buttonGapIconText = context.resources.getDimensionPixelSize(R.dimen.sb_button_gap_icon_text)
         val buttonHeight = context.resources.getDimensionPixelSize(R.dimen.sb_button_height)
         val minWidth = context.resources.getDimensionPixelSize(R.dimen.sb_button_min_width)
 
@@ -135,19 +140,42 @@ class SegmentedButtonBar @JvmOverloads constructor(
             val textView = itemView.findViewById<TextView>(R.id.sb_item_text)
 
             val (iconRes, textVal) = getButtonAttributes(ta, i)
+            val hasIcon = (iconRes != 0)
+            val hasText = !textVal.isNullOrEmpty()
 
-            if (iconRes != 0) {
-                iconView.setImageResource(iconRes)
-                iconView.visibility = View.VISIBLE
-            } else {
-                iconView.visibility = View.GONE
-            }
-
-            if (!textVal.isNullOrEmpty()) {
-                textView.text = textVal
-                textView.visibility = View.VISIBLE
-            } else {
-                textView.visibility = View.GONE
+            when {
+                // İkon + Metin birlikte / Icon + Text together
+                hasIcon && hasText -> {
+                    iconView.setImageResource(iconRes)
+                    iconView.visibility = View.VISIBLE
+                    textView.text = textVal
+                    textView.visibility = View.VISIBLE
+                    (textView.layoutParams as? MarginLayoutParams)?.marginStart = buttonGapIconText
+                    textView.gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                }
+                // Yalnızca Metin (Tam Ortalanmış) / Text Only (Centered)
+                !hasIcon && hasText -> {
+                    iconView.visibility = View.GONE
+                    textView.text = textVal
+                    textView.visibility = View.VISIBLE
+                    (textView.layoutParams as? MarginLayoutParams)?.marginStart = 0
+                    textView.gravity = Gravity.CENTER
+                }
+                // Yalnızca İkon (Tam Ortalanmış) / Icon Only (Centered)
+                hasIcon && !hasText -> {
+                    iconView.setImageResource(iconRes)
+                    iconView.visibility = View.VISIBLE
+                    textView.visibility = View.GONE
+                    (textView.layoutParams as? MarginLayoutParams)?.marginStart = 0
+                }
+                // Hiçbiri verilmemişse varsayılan metin / Fallback when neither is specified
+                else -> {
+                    iconView.visibility = View.GONE
+                    textView.text = getDefaultContentDescription(i)
+                    textView.visibility = View.VISIBLE
+                    (textView.layoutParams as? MarginLayoutParams)?.marginStart = 0
+                    textView.gravity = Gravity.CENTER
+                }
             }
 
             itemView.contentDescription = textVal ?: getDefaultContentDescription(i)
@@ -185,6 +213,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
         val barPadding = context.resources.getDimensionPixelSize(R.dimen.sb_bar_padding)
         val buttonGap = context.resources.getDimensionPixelSize(R.dimen.sb_button_gap)
+        val buttonGapIconText = context.resources.getDimensionPixelSize(R.dimen.sb_button_gap_icon_text)
         val buttonWidth = context.resources.getDimensionPixelSize(R.dimen.sb_vertical_button_width)
         val buttonHeight = context.resources.getDimensionPixelSize(R.dimen.sb_vertical_button_height)
 
@@ -197,10 +226,40 @@ class SegmentedButtonBar @JvmOverloads constructor(
         for (i in 0 until buttonCount) {
             val itemView = inflater.inflate(R.layout.sb_button_vertical_item, this, false)
             val iconView = itemView.findViewById<ImageView>(R.id.sb_vertical_icon)
+            val textView = itemView.findViewById<TextView>(R.id.sb_vertical_text)
 
             val (iconRes, textVal) = getButtonAttributes(ta, i)
-            val finalIcon = if (iconRes != 0) iconRes else R.drawable.ic_sb_arrow_next
-            iconView.setImageResource(finalIcon)
+            val hasIcon = (iconRes != 0)
+            val hasText = !textVal.isNullOrEmpty()
+
+            when {
+                hasIcon && hasText -> {
+                    iconView.setImageResource(iconRes)
+                    iconView.visibility = View.VISIBLE
+                    textView.text = textVal
+                    textView.visibility = View.VISIBLE
+                    (textView.layoutParams as? MarginLayoutParams)?.topMargin = buttonGapIconText
+                }
+                !hasIcon && hasText -> {
+                    iconView.visibility = View.GONE
+                    textView.text = textVal
+                    textView.visibility = View.VISIBLE
+                    (textView.layoutParams as? MarginLayoutParams)?.topMargin = 0
+                    textView.gravity = Gravity.CENTER
+                }
+                hasIcon && !hasText -> {
+                    iconView.setImageResource(iconRes)
+                    iconView.visibility = View.VISIBLE
+                    textView.visibility = View.GONE
+                    (textView.layoutParams as? MarginLayoutParams)?.topMargin = 0
+                }
+                else -> {
+                    iconView.setImageResource(R.drawable.ic_sb_arrow_next)
+                    iconView.visibility = View.VISIBLE
+                    textView.visibility = View.GONE
+                    (textView.layoutParams as? MarginLayoutParams)?.topMargin = 0
+                }
+            }
 
             itemView.contentDescription = textVal ?: getDefaultContentDescription(i)
 
@@ -360,14 +419,12 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
             val buttonIndex = i
             if (buttonIndex == 0) {
-                // Ana kanca butonu / Anchor button
                 itemView.visibility = View.VISIBLE
                 itemView.setOnClickListener {
                     toggleExpand()
                     buttonClickListeners[0]?.invoke()
                 }
             } else {
-                // Genişleyince açılacak butonlar / Child buttons that appear on expansion
                 itemView.visibility = View.GONE
                 itemView.alpha = 0f
                 itemView.setOnClickListener {
@@ -608,6 +665,28 @@ class SegmentedButtonBar @JvmOverloads constructor(
     }
 
     /**
+     * Belirli buton metinlerini güncellemek için kısayol fonksiyonları.
+     * Convenience methods to update specific button texts.
+     */
+    fun setButton1Text(text: CharSequence?) = setButtonText(0, text)
+    fun setButton1Text(resId: Int) = setButtonText(0, context.getString(resId))
+    fun setButton2Text(text: CharSequence?) = setButtonText(1, text)
+    fun setButton2Text(resId: Int) = setButtonText(1, context.getString(resId))
+    fun setButton3Text(text: CharSequence?) = setButtonText(2, text)
+    fun setButton3Text(resId: Int) = setButtonText(2, context.getString(resId))
+    fun setButton4Text(text: CharSequence?) = setButtonText(3, text)
+    fun setButton4Text(resId: Int) = setButtonText(3, context.getString(resId))
+
+    /**
+     * Belirli buton ikonlarını güncellemek için kısayol fonksiyonları.
+     * Convenience methods to update specific button icons.
+     */
+    fun setButton1Icon(@DrawableRes iconRes: Int) = setButtonIcon(0, iconRes)
+    fun setButton2Icon(@DrawableRes iconRes: Int) = setButtonIcon(1, iconRes)
+    fun setButton3Icon(@DrawableRes iconRes: Int) = setButtonIcon(2, iconRes)
+    fun setButton4Icon(@DrawableRes iconRes: Int) = setButtonIcon(3, iconRes)
+
+    /**
      * Çubuk içindeki buton görünümünü döner.
      * Returns the button view at the given index.
      */
@@ -620,22 +699,42 @@ class SegmentedButtonBar @JvmOverloads constructor(
     fun getButtonCount(): Int = buttonViews.size
 
     /**
-     * Buton metnini dinamik olarak günceller.
-     * Updates button text dynamically.
+     * Buton metnini dinamik olarak günceller ve ortalama/hizalamayı yeniden düzenler.
+     * Updates button text dynamically and reconfigures centering/alignment.
      */
     fun setButtonText(index: Int, text: CharSequence?) {
         val button = buttonViews.getOrNull(index) ?: return
         val textView = button.findViewById<TextView>(R.id.sb_item_text)
+            ?: button.findViewById<TextView>(R.id.sb_vertical_text)
             ?: button.findViewById<TextView>(R.id.sb_pill_text)
+        val iconView = button.findViewById<ImageView>(R.id.sb_item_icon)
+            ?: button.findViewById<ImageView>(R.id.sb_vertical_icon)
+            ?: button.findViewById<ImageView>(R.id.sb_pill_icon)
+
+        val buttonGapIconText = context.resources.getDimensionPixelSize(R.dimen.sb_button_gap_icon_text)
+
         textView?.let {
             it.text = text
-            it.visibility = if (text.isNullOrEmpty()) View.GONE else View.VISIBLE
+            if (text.isNullOrEmpty()) {
+                it.visibility = View.GONE
+                (it.layoutParams as? MarginLayoutParams)?.marginStart = 0
+            } else {
+                it.visibility = View.VISIBLE
+                val isIconVisible = (iconView?.visibility == View.VISIBLE)
+                if (isIconVisible) {
+                    (it.layoutParams as? MarginLayoutParams)?.marginStart = buttonGapIconText
+                    it.gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                } else {
+                    (it.layoutParams as? MarginLayoutParams)?.marginStart = 0
+                    it.gravity = Gravity.CENTER
+                }
+            }
         }
     }
 
     /**
-     * Buton ikonunu dinamik olarak günceller.
-     * Updates button icon dynamically.
+     * Buton ikonunu dinamik olarak günceller ve ikonsuzluk durumunda metni otomatik ortalar.
+     * Updates button icon dynamically and automatically centers text when icon is absent (iconRes = 0).
      */
     fun setButtonIcon(index: Int, @DrawableRes iconRes: Int) {
         val button = buttonViews.getOrNull(index) ?: return
@@ -643,12 +742,29 @@ class SegmentedButtonBar @JvmOverloads constructor(
             ?: button.findViewById<ImageView>(R.id.sb_vertical_icon)
             ?: button.findViewById<ImageView>(R.id.sb_circular_icon)
             ?: button.findViewById<ImageView>(R.id.sb_pill_icon)
+        val textView = button.findViewById<TextView>(R.id.sb_item_text)
+            ?: button.findViewById<TextView>(R.id.sb_vertical_text)
+
+        val buttonGapIconText = context.resources.getDimensionPixelSize(R.dimen.sb_button_gap_icon_text)
+
         iconView?.let {
             if (iconRes != 0) {
                 it.setImageResource(iconRes)
                 it.visibility = View.VISIBLE
+                textView?.let { tv ->
+                    if (tv.visibility == View.VISIBLE) {
+                        (tv.layoutParams as? MarginLayoutParams)?.marginStart = buttonGapIconText
+                        tv.gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                    }
+                }
             } else {
                 it.visibility = View.GONE
+                textView?.let { tv ->
+                    if (tv.visibility == View.VISIBLE) {
+                        (tv.layoutParams as? MarginLayoutParams)?.marginStart = 0
+                        tv.gravity = Gravity.CENTER
+                    }
+                }
             }
         }
     }

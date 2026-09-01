@@ -5,8 +5,8 @@ import androidx.appcompat.app.AppCompatActivity
 import com.dimetileter.segmentedbuttons.databinding.ActivityMainBinding
 
 /**
- * SegmentedButtonBar bileşenlerinin tüm 5 stilini gösteren örnek etkinlik.
- * Demo activity showcasing all 5 styles of SegmentedButtonBar components.
+ * SegmentedButtonBar bileşenlerinin metin ve ikon odaklı kullanımını gösteren örnek etkinlik.
+ * Demo activity showcasing text-only, icon-only, and icon+text configurations.
  */
 class MainActivity : AppCompatActivity() {
 
@@ -21,34 +21,34 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        // Horizontal 2-button bar
-        binding.horizontalBar2.setOnButton1Click {
-            binding.statusText.text = "Status: Horizontal (2) -> Button 1 (Camera)"
+        // Horizontal text-only bar (Day, Week, Month)
+        binding.horizontalBarTextOnly.setOnButton1Click {
+            binding.statusText.text = "Status: Text-Only -> Button 1 (Day)"
         }
-        binding.horizontalBar2.setOnButton2Click {
-            binding.statusText.text = "Status: Horizontal (2) -> Button 2 (Gallery)"
+        binding.horizontalBarTextOnly.setOnButton2Click {
+            binding.statusText.text = "Status: Text-Only -> Button 2 (Week)"
+        }
+        binding.horizontalBarTextOnly.setOnButton3Click {
+            binding.statusText.text = "Status: Text-Only -> Button 3 (Month)"
         }
 
-        // Horizontal 3-button bar
-        binding.horizontalBar3.setOnButton1Click {
-            binding.statusText.text = "Status: Horizontal (3) -> Button 1 (All)"
+        // Horizontal icon + text bar
+        binding.horizontalBarIconText.setOnButton1Click {
+            binding.statusText.text = "Status: Icon+Text -> Button 1 (Previous)"
         }
-        binding.horizontalBar3.setOnButton2Click {
-            binding.statusText.text = "Status: Horizontal (3) -> Button 2 (Favorites)"
-        }
-        binding.horizontalBar3.setOnButton3Click {
-            binding.statusText.text = "Status: Horizontal (3) -> Button 3 (Archived)"
+        binding.horizontalBarIconText.setOnButton2Click {
+            binding.statusText.text = "Status: Icon+Text -> Button 2 (Next)"
         }
 
         // Vertical 3-button bar
         binding.verticalBar3.setOnButton1Click {
-            binding.statusText.text = "Status: Vertical (3) -> Button 1"
+            binding.statusText.text = "Status: Vertical -> Button 1"
         }
         binding.verticalBar3.setOnButton2Click {
-            binding.statusText.text = "Status: Vertical (3) -> Button 2"
+            binding.statusText.text = "Status: Vertical -> Button 2"
         }
         binding.verticalBar3.setOnButton3Click {
-            binding.statusText.text = "Status: Vertical (3) -> Button 3"
+            binding.statusText.text = "Status: Vertical -> Button 3"
         }
 
         // Circular single-button bar

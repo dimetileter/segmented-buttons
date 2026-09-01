@@ -22,42 +22,44 @@
             android:textStyle="bold"
             android:layout_marginBottom="24dp" />
 
-        <!-- 1. Horizontal Style (2 Buttons) -->
+        <!-- 1. Horizontal Style (Text-Only, Perfectly Centered) -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="1. Horizontal Style (2 Buttons)"
+            android:text="1. Horizontal Style (Text-Only / Centered)"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
-            android:id="@+id/horizontalBar2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:sbStyle="horizontal"
-            app:sbButtonCount="2"
-            app:sbButton1Text="Camera"
-            app:sbButton2Text="Gallery"
-            android:layout_marginBottom="20dp" />
-
-        <!-- 2. Horizontal Style (3 Buttons) -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="2. Horizontal Style (3 Buttons)"
-            android:layout_marginBottom="8dp" />
-
-        <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
-            android:id="@+id/horizontalBar3"
+            android:id="@+id/horizontalBarTextOnly"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:sbStyle="horizontal"
             app:sbButtonCount="3"
-            app:sbButton1Text="All"
-            app:sbButton2Text="Favorites"
-            app:sbButton3Text="Archived"
+            app:sbButton1Text="Day"
+            app:sbButton2Text="Week"
+            app:sbButton3Text="Month"
             android:layout_marginBottom="20dp" />
 
-        <!-- 3. Vertical Style (3 Buttons) -->
+        <!-- 2. Horizontal Style (Icon + Text) -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="2. Horizontal Style (Icon + Text)"
+            android:layout_marginBottom="8dp" />
+
+        <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
+            android:id="@+id/horizontalBarIconText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:sbStyle="horizontal"
+            app:sbButtonCount="2"
+            app:sbButton1Icon="@drawable/ic_sb_arrow_back"
+            app:sbButton1Text="Previous"
+            app:sbButton2Icon="@drawable/ic_sb_arrow_next"
+            app:sbButton2Text="Next"
+            android:layout_marginBottom="20dp" />
+
+        <!-- 3. Vertical Style (Icon-Only & Text-Flexible) -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -70,6 +72,9 @@
             android:layout_height="wrap_content"
             app:sbStyle="vertical"
             app:sbButtonCount="3"
+            app:sbButton1Icon="@drawable/ic_sb_arrow_next"
+            app:sbButton2Icon="@drawable/ic_sb_arrow_back"
+            app:sbButton3Icon="@drawable/ic_sb_arrow_next"
             android:layout_marginBottom="20dp" />
 
         <!-- 4. Circular Style (Single Button) -->
@@ -84,6 +89,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:sbStyle="circular"
+            app:sbButton1Icon="@drawable/ic_sb_arrow_next"
             android:layout_marginBottom="20dp" />
 
         <!-- 5. Expandable Animated Style -->
@@ -99,6 +105,9 @@
             android:layout_height="wrap_content"
             app:sbStyle="expandable"
             app:sbButtonCount="3"
+            app:sbButton1Icon="@drawable/ic_sb_arrow_next"
+            app:sbButton2Icon="@drawable/ic_sb_arrow_back"
+            app:sbButton3Icon="@drawable/ic_sb_arrow_next"
             android:layout_marginBottom="20dp" />
 
         <!-- 6. Pill Style (Next Button) -->

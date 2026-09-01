@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Single Vertical Button Item / Tekil Dikey Buton Öğesi -->
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/sb_vertical_root"
     android:layout_width="@dimen/sb_vertical_button_width"
     android:layout_height="@dimen/sb_vertical_button_height"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="@dimen/sb_button_padding"
     android:background="@drawable/state_segmented_button"
     android:foreground="?android:attr/selectableItemBackground"
     android:clipToOutline="true"
@@ -16,8 +19,23 @@
         android:id="@+id/sb_vertical_icon"
         android:layout_width="@dimen/sb_button_icon_size"
         android:layout_height="@dimen/sb_button_icon_size"
-        android:layout_gravity="center"
         android:scaleType="centerInside"
         android:contentDescription="@null"
+        android:visibility="gone"
+        tools:visibility="visible"
         tools:src="@drawable/ic_sb_arrow_next" />
-</FrameLayout>
+
+    <!-- Button Text / Buton Metni -->
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/sb_vertical_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textColor="@color/sb_button_text"
+        android:textSize="@dimen/sb_button_text_size"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:visibility="gone"
+        tools:visibility="visible"
+        tools:text="1" />
+</LinearLayout>

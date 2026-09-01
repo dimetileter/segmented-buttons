@@ -53,19 +53,31 @@ dependencies {
 
 ### 1. Horizontal Style (`horizontal`)
 
-A multi-button horizontal selector with radio-group single selection semantics:
+Supports **Text-Only** (automatically centered), **Icon-Only**, or **Icon + Text** with single radio-group selection:
 
 ```xml
+<!-- Text-Only (Texts are perfectly centered) -->
 <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
     android:id="@+id/horizontalBar"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     app:sbStyle="horizontal"
     app:sbButtonCount="3"
-    app:sbButton1Text="All"
-    app:sbButton2Text="Favorites"
-    app:sbButton3Text="Archived"
+    app:sbButton1Text="Day"
+    app:sbButton2Text="Week"
+    app:sbButton3Text="Month"
     app:sbAutoSelect="true" />
+
+<!-- Icon + Text Pair -->
+<com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:sbStyle="horizontal"
+    app:sbButtonCount="2"
+    app:sbButton1Icon="@drawable/ic_back"
+    app:sbButton1Text="Previous"
+    app:sbButton2Icon="@drawable/ic_next"
+    app:sbButton2Text="Next" />
 ```
 
 ### 2. Vertical Style (`vertical`)
