@@ -11,6 +11,7 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLooper
 
 /**
  * Expandable (animasyonlu genişleyen) stil birim testleri.
@@ -124,5 +125,42 @@ class ExpandableStyleTest {
 
         bar.toggleExpand(animate = false)
         assertThat(bar.isExpanded()).isFalse()
+    }
+
+    /**
+     * sbCollapseOnSelect=true olduğunda, genişleme sonrası seçilen butonun ikonu ile otomatik daraldığını test eder.
+     * Tests auto-collapse on selection where the selected button icon becomes visible on the collapsed anchor.
+     */
+    @Test
+    fun verifyCollapseOnSelectUpdatesAnchorAndCollapses() {
+        val attrs = Robolectric.buildAttributeSet()
+            .addAttribute(R.attr.sbStyle, "expandable")
+            .addAttribute(R.attr.sbButtonCount, "3")
+            .addAttribute(R.attr.sbCollapseOnSelect, "true")
+            .addAttribute(R.attr.sbButton1Icon, "@drawable/ic_sb_arrow_next")
+            .addAttribute(R.attr.sbButton2Icon, "@drawable/ic_sb_arrow_back")
+            .addAttribute(R.attr.sbButton3Icon, "@drawable/ic_sb_arrow_next")
+            .addAttribute(R.attr.sbButton3ContentDescription, "Dollar Action")
+            .build()
+
+        val bar = SegmentedButtonBar(context, attrs)
+        assertThat(bar.isCollapseOnSelect()).isTrue()
+
+        // 1. Menüyü genişlet
+        bar.expand(animate = false)
+        assertThat(bar.isExpanded()).isTrue()
+
+        // 2. 3. butona (index 2) tıkla
+        bar.getButton(2)?.performClick()
+        ShadowLooper.idleMainLooper()
+
+        // 3. Otomatik daralma gerçekleşmeli
+        assertThat(bar.isExpanded()).isFalse()
+        assertThat(bar.getSelectedButtonIndex()).isEqualTo(2)
+
+        // 4. Görünür kalan ana (anchor) buton artık 3. butonun özelliklerini taşımalı
+        val anchorView = bar.getButton(0)
+        assertThat(anchorView?.contentDescription?.toString()).isEqualTo("Dollar Action")
+        assertThat(anchorView?.isSelected).isTrue()
     }
 }

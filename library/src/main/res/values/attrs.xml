@@ -36,6 +36,9 @@
             <enum name="start" value="1" />
         </attr>
 
+        <!-- Auto-collapse expandable bar after selecting a child button / Seçim sonrası otomatik daralma -->
+        <attr name="sbCollapseOnSelect" format="boolean" />
+
         <!-- Bar elevation & shadow / Çubuk gölge ve yükseklik seviyesi -->
         <attr name="sbElevation" format="dimension" />
 

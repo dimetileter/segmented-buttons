@@ -134,7 +134,7 @@ An 80×32dp action pill button supporting `next`, `back`, and `text` actions wit
 
 ### 5. Expandable Style (`expandable`)
 
-An animated bar that starts collapsed (36×36dp) and smoothly expands on tap:
+An animated bar that starts collapsed (44×44dp) and smoothly expands on tap. Supports auto-collapsing to the selected action (`sbCollapseOnSelect="true"`):
 
 ```xml
 <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -143,7 +143,8 @@ An animated bar that starts collapsed (36×36dp) and smoothly expands on tap:
     android:layout_height="wrap_content"
     app:sbStyle="expandable"
     app:sbButtonCount="3"
-    app:sbButton1Icon="@drawable/ic_sb_arrow_next"
+    app:sbCollapseOnSelect="true"
+    app:sbButton1Icon="@drawable/ic_add"
     app:sbButton2Icon="@drawable/ic_camera"
     app:sbButton3Icon="@drawable/ic_gallery"
     app:sbExpandDirection="end" />
@@ -168,11 +169,14 @@ segmentedBar.setOnPillClick {
     segmentedBar.setPillActivated(isActivated)
 }
 
-// Expandable Controls
+// Expandable Controls & Auto-Collapse on Select
 segmentedBar.expand(animate = true)
 segmentedBar.collapse(animate = true)
 segmentedBar.toggleExpand(animate = true)
+segmentedBar.setCollapseOnSelect(true)
 segmentedBar.setOnExpandChangeListener { isExpanded ->
+    // Track expand/collapse state
+}
     // Responding to expand/collapse animation state
 }
 
@@ -248,6 +252,7 @@ segmentedBar.setBarBackgroundColor(Color.parseColor("#222222"))
 | `app:sbMaxWidth` | `dimension` | `match_parent` | Optional maximum width cap for responsive layouts |
 | `app:sbPillType` | `enum` | `next` | Action type for pill style (`next`, `back`, `text`) |
 | `app:sbExpandDirection` | `enum` | `end` | Direction for expandable expansion (`end`, `start`) |
+| `app:sbCollapseOnSelect` | `boolean` | `false` | Automatically collapse expandable bar to selected item upon click |
 | `app:sbElevation` | `dimension` | `0dp` | Bar elevation and shadow depth |
 
 ---
