@@ -22,6 +22,24 @@
             android:textStyle="bold"
             android:layout_marginBottom="24dp" />
 
+        <!-- 0. TabBar Style with Sliding Pill Indicator -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0. Modern TabBar (Sliding Pill Indicator)"
+            android:layout_marginBottom="8dp" />
+
+        <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
+            android:id="@+id/tabBarDemo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:sbStyle="tab"
+            app:sbButtonCount="3"
+            app:sbButton1Text="Home"
+            app:sbButton2Text="Explore"
+            app:sbButton3Text="Profile"
+            android:layout_marginBottom="20dp" />
+
         <!-- 1. 5-Button Bar with Hybrid Circular & Icon Tint -->
         <TextView
             android:layout_width="wrap_content"

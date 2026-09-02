@@ -2,9 +2,11 @@ package com.dimetileter.segmentedbuttonbar
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.content.Context
 import android.content.res.ColorStateList
 import android.content.res.TypedArray
+import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
@@ -21,19 +23,27 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
+import androidx.annotation.IdRes
 import androidx.annotation.StringRes
 import androidx.appcompat.widget.TooltipCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.AccessibilityDelegateCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import androidx.core.widget.ImageViewCompat
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator
+import androidx.viewpager2.widget.ViewPager2
 
 /**
  * SegmentedButtonBar — Özelleştirilebilir, hibrit stilleri, ikon ve arkaplan renklendirmesini (Icon Tint, Gradient/Color BG),
- * TalkBack erişilebilirliğini, Tooltip (uzun basma) desteğini, animasyonlu genişleyen/daralan (Expandable) menü yönetimini
- * ve gelişmiş XML durum yönetimini destekleyen Segmented Buton bileşeni.
+ * TalkBack erişilebilirliğini, Tooltip (uzun basma) desteğini, animasyonlu genişleyen/daralan (Expandable) menü yönetimini,
+ * modern kayan göstergeli TabBar (`sbStyle="tab"`) ve ViewPager2 / Fragment çift yönlü entegrasyonunu destekleyen Segmented Buton bileşeni.
  *
  * SegmentedButtonBar — Customizable, dynamic Segmented Button component with hybrid styles,
- * icon tinting, custom gradients/colors, TalkBack accessibility, Tooltip (long press) support,
- * animated Expandable menu with auto-collapse on select, and XML-first state management.
+ * icon tinting, custom gradients/colors, TalkBack accessibility, Tooltip support,
+ * animated Expandable menu, modern sliding pill TabBar (`sbStyle="tab"`), and seamless ViewPager2 / Fragment two-way integration.
  */
 class SegmentedButtonBar @JvmOverloads constructor(
     context: Context,
@@ -48,6 +58,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
         const val STYLE_CIRCULAR = 2
         const val STYLE_PILL = 3
         const val STYLE_EXPANDABLE = 4
+        const val STYLE_TAB = 5
 
         // Buton Bazlı Stil Sabitleri / Per-Button Style Constants
         const val BUTTON_STYLE_HORIZONTAL = 0
@@ -69,6 +80,15 @@ class SegmentedButtonBar @JvmOverloads constructor(
         private const val DEFAULT_VERTICAL_COUNT = 3
         private const val DEFAULT_EXPANDABLE_COUNT = 3
         private const val ANIMATION_DURATION_MS = 300L
+        private const val DEFAULT_INDICATOR_DURATION_MS = 250L
+    }
+
+    class TabConfig {
+        var text: CharSequence? = null
+        var iconRes: Int = 0
+        var iconTint: Int? = null
+        var tooltip: CharSequence? = null
+        var contentDescription: CharSequence? = null
     }
 
     private data class ButtonMeta(
@@ -89,6 +109,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
     private var pillType: Int = PILL_NEXT
     private var expandDirection: Int = EXPAND_END
     private var collapseOnSelect: Boolean = false
+    private var slideIndicator: Boolean = false
+    private var indicatorDurationMs: Long = DEFAULT_INDICATOR_DURATION_MS
     private var maxWidthPx: Int = -1
 
     private var globalIconTint: ColorStateList? = null
@@ -98,9 +120,17 @@ class SegmentedButtonBar @JvmOverloads constructor(
     private var showUnselectedBackground: Boolean = false
     private var unselectedButtonColor: Int? = null
 
+    // Kayan Gösterge (Sliding Indicator) Çizim Durumları
+    private var indicatorLeft: Float = 0f
+    private var indicatorRight: Float = 0f
+    private var isIndicatorPositionInitialized: Boolean = false
+    private var indicatorAnimator: ValueAnimator? = null
+    private var indicatorDrawable: Drawable? = null
+
     private var isExpanded: Boolean = false
     private var isAnimating: Boolean = false
     private var onExpandChangeListener: ((Boolean) -> Unit)? = null
+    private var onTabSelectedListener: ((Int) -> Unit)? = null
 
     private val buttonViews = mutableListOf<View>()
     private val buttonMetaList = mutableListOf<ButtonMeta>()
@@ -109,7 +139,12 @@ class SegmentedButtonBar @JvmOverloads constructor(
     private var pillClickListener: (() -> Unit)? = null
     private var selectedIndex: Int = 0
 
+    // ViewPager2 Dinleyicisi Referansı
+    private var registeredViewPagerCallback: ViewPager2.OnPageChangeCallback? = null
+    private var boundViewPager: ViewPager2? = null
+
     init {
+        setWillNotDraw(false)
         val ta = context.obtainStyledAttributes(attrs, R.styleable.SegmentedButtonBar, defStyleAttr, 0)
         try {
             readAttributesAndSetup(ta)
@@ -137,6 +172,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
         expandDirection = ta.getInt(R.styleable.SegmentedButtonBar_sbExpandDirection, EXPAND_END)
         collapseOnSelect = ta.getBoolean(R.styleable.SegmentedButtonBar_sbCollapseOnSelect, false)
         maxWidthPx = ta.getDimensionPixelSize(R.styleable.SegmentedButtonBar_sbMaxWidth, -1)
+
+        val defaultSlide = (currentStyle == STYLE_TAB)
+        slideIndicator = ta.getBoolean(R.styleable.SegmentedButtonBar_sbSlideIndicator, defaultSlide)
+        indicatorDurationMs = ta.getInt(R.styleable.SegmentedButtonBar_sbIndicatorDuration, DEFAULT_INDICATOR_DURATION_MS.toInt()).toLong()
 
         globalIconTint = ta.getColorStateList(R.styleable.SegmentedButtonBar_sbIconTint)
         if (ta.hasValue(R.styleable.SegmentedButtonBar_sbAllActivated)) {
@@ -167,18 +206,66 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
 
         when (currentStyle) {
-            STYLE_HORIZONTAL -> setupHorizontal(ta)
+            STYLE_HORIZONTAL, STYLE_TAB -> setupHorizontal(ta)
             STYLE_VERTICAL -> setupVertical(ta)
             STYLE_CIRCULAR -> setupCircular(ta)
             STYLE_PILL -> setupPill(ta)
             STYLE_EXPANDABLE -> setupExpandable(ta)
             else -> setupHorizontal(ta)
         }
+
+        setupAccessibilitySemantics()
     }
 
     /**
-     * Yatay segmented buton çubuğunu yapılandırır.
-     * Standart ve hibrit (ör. 2 yatay + 1 dairesel) butonları destekler.
+     * Android OS ve TalkBack ekran okuyucusu için TabBar semantiklerini yapılandırır.
+     * Configures native TabBar semantics for Android OS and TalkBack accessibility services.
+     */
+    private fun setupAccessibilitySemantics() {
+        if (currentStyle == STYLE_TAB) {
+            ViewCompat.setAccessibilityDelegate(this, object : AccessibilityDelegateCompat() {
+                override fun onInitializeAccessibilityNodeInfo(host: View, info: AccessibilityNodeInfoCompat) {
+                    super.onInitializeAccessibilityNodeInfo(host, info)
+                    info.className = "android.widget.TabWidget"
+                    info.setCollectionInfo(
+                        AccessibilityNodeInfoCompat.CollectionInfoCompat.obtain(
+                            /* rowCount = */ 1,
+                            /* columnCount = */ buttonViews.size,
+                            /* isHierarchical = */ false,
+                            /* selectionMode = */ AccessibilityNodeInfoCompat.CollectionInfoCompat.SELECTION_MODE_SINGLE
+                        )
+                    )
+                }
+            })
+
+            val roleTabString = context.getString(R.string.sb_role_tab)
+            buttonViews.forEachIndexed { i, buttonView ->
+                ViewCompat.setAccessibilityDelegate(buttonView, object : AccessibilityDelegateCompat() {
+                    override fun onInitializeAccessibilityNodeInfo(host: View, info: AccessibilityNodeInfoCompat) {
+                        super.onInitializeAccessibilityNodeInfo(host, info)
+                        info.roleDescription = roleTabString
+                        info.className = "android.app.ActionBar\$Tab"
+                        val isSel = (i == selectedIndex)
+                        info.isSelected = isSel
+                        info.setCollectionItemInfo(
+                            AccessibilityNodeInfoCompat.CollectionItemInfoCompat.obtain(
+                                /* rowIndex = */ 0,
+                                /* rowSpan = */ 1,
+                                /* columnIndex = */ i,
+                                /* columnSpan = */ 1,
+                                /* heading = */ false,
+                                /* selected = */ isSel
+                            )
+                        )
+                    }
+                })
+            }
+        }
+    }
+
+    /**
+     * Yatay ve TabBar segmented buton çubuğunu yapılandırır.
+     * Standart, hibrit ve kayan göstergeli TabBar butonlarını destekler.
      */
     private fun setupHorizontal(ta: TypedArray) {
         orientation = HORIZONTAL
@@ -188,7 +275,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
         val buttonGap = context.resources.getDimensionPixelSize(R.dimen.sb_button_gap)
         val buttonGapIconText = context.resources.getDimensionPixelSize(R.dimen.sb_button_gap_icon_text)
         val buttonHeight = context.resources.getDimensionPixelSize(R.dimen.sb_button_height)
-        val minWidth = context.resources.getDimensionPixelSize(R.dimen.sb_button_min_width)
+        val minWidth = if (currentStyle == STYLE_TAB) 0 else context.resources.getDimensionPixelSize(R.dimen.sb_button_min_width)
         val circularHybridSize = context.resources.getDimensionPixelSize(R.dimen.sb_circular_button_size)
 
         val barSelectedIndex = if (ta.hasValue(R.styleable.SegmentedButtonBar_sbSelectedIndex)) {
@@ -200,6 +287,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
         setPadding(barPadding, barPadding, barPadding, barPadding)
         removeAllViews()
         buttonViews.clear()
+        isIndicatorPositionInitialized = false
 
         val inflater = LayoutInflater.from(context)
 
@@ -223,15 +311,19 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 iconView.setImageResource(finalIcon)
                 perButtonTint?.let { ImageViewCompat.setImageTintList(iconView, it) }
 
-                applyButtonBackground(
-                    itemView,
-                    isCircular = true,
-                    customBackgroundDrawable = customBg,
-                    selectedCustomDrawable = selectedBg ?: globalSelectedBackground,
-                    selectedCustomColor = selectedCol ?: globalSelectedColor,
-                    showUnselectedBg = showUnselectedBackground,
-                    unselectedCustomColor = unselectedButtonColor
-                )
+                if (!slideIndicator) {
+                    applyButtonBackground(
+                        itemView,
+                        isCircular = true,
+                        customBackgroundDrawable = customBg,
+                        selectedCustomDrawable = selectedBg ?: globalSelectedBackground,
+                        selectedCustomColor = selectedCol ?: globalSelectedColor,
+                        showUnselectedBg = showUnselectedBackground,
+                        unselectedCustomColor = unselectedButtonColor
+                    )
+                } else {
+                    itemView.background = ColorDrawable(Color.TRANSPARENT)
+                }
 
                 val finalCd = customCd ?: textVal ?: getDefaultContentDescription(i)
                 itemView.contentDescription = finalCd
@@ -270,22 +362,26 @@ class SegmentedButtonBar @JvmOverloads constructor(
                     buttonLongClickListeners[buttonIndex]?.invoke() ?: false
                 }
             } else {
-                // Standart Yatay Buton / Flexible Horizontal Button
+                // Standart Yatay Buton / TabBar Butonu
                 itemView = inflater.inflate(R.layout.sb_button_horizontal_item, this, false)
                 val iconView = itemView.findViewById<ImageView>(R.id.sb_item_icon)
                 val textView = itemView.findViewById<TextView>(R.id.sb_item_text)
 
                 perButtonTint?.let { ImageViewCompat.setImageTintList(iconView, it) }
 
-                applyButtonBackground(
-                    itemView,
-                    isCircular = false,
-                    customBackgroundDrawable = customBg,
-                    selectedCustomDrawable = selectedBg ?: globalSelectedBackground,
-                    selectedCustomColor = selectedCol ?: globalSelectedColor,
-                    showUnselectedBg = showUnselectedBackground,
-                    unselectedCustomColor = unselectedButtonColor
-                )
+                if (!slideIndicator) {
+                    applyButtonBackground(
+                        itemView,
+                        isCircular = false,
+                        customBackgroundDrawable = customBg,
+                        selectedCustomDrawable = selectedBg ?: globalSelectedBackground,
+                        selectedCustomColor = selectedCol ?: globalSelectedColor,
+                        showUnselectedBg = showUnselectedBackground,
+                        unselectedCustomColor = unselectedButtonColor
+                    )
+                } else {
+                    itemView.background = ColorDrawable(Color.TRANSPARENT)
+                }
 
                 val hasIcon = (iconRes != 0)
                 val hasText = !textVal.isNullOrEmpty()
@@ -314,7 +410,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
                     }
                     else -> {
                         iconView.visibility = View.GONE
-                        textView.text = getDefaultContentDescription(i)
+                        textView.text = if (currentStyle == STYLE_TAB) "Tab ${i + 1}" else getDefaultContentDescription(i)
                         textView.visibility = View.VISIBLE
                         (textView.layoutParams as? MarginLayoutParams)?.marginStart = 0
                         textView.gravity = Gravity.CENTER
@@ -877,6 +973,52 @@ class SegmentedButtonBar @JvmOverloads constructor(
         view.background = stateList
     }
 
+    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
+        super.onLayout(changed, l, t, r, b)
+        if (slideIndicator && buttonViews.isNotEmpty() && selectedIndex in buttonViews.indices) {
+            val target = buttonViews[selectedIndex]
+            if (target.width > 0 && (!isIndicatorPositionInitialized || changed)) {
+                indicatorLeft = target.left.toFloat()
+                indicatorRight = target.right.toFloat()
+                isIndicatorPositionInitialized = true
+                invalidate()
+            }
+        }
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        if (slideIndicator && buttonViews.isNotEmpty() && selectedIndex in buttonViews.indices) {
+            val selectedView = buttonViews[selectedIndex]
+            if (!isIndicatorPositionInitialized && selectedView.width > 0) {
+                indicatorLeft = selectedView.left.toFloat()
+                indicatorRight = selectedView.right.toFloat()
+                isIndicatorPositionInitialized = true
+            }
+
+            if (isIndicatorPositionInitialized && indicatorRight > indicatorLeft) {
+                val barPaddingTop = paddingTop.toFloat()
+                val barPaddingBottom = (height - paddingBottom).toFloat()
+                val cornerRadius = context.resources.getDimension(R.dimen.sb_button_radius)
+
+                val drawable = globalSelectedBackground ?: indicatorDrawable ?: GradientDrawable().apply {
+                    shape = GradientDrawable.RECTANGLE
+                    this.cornerRadius = cornerRadius
+                    val col = globalSelectedColor ?: ContextCompat.getColor(context, R.color.sb_button_selected)
+                    setColor(col)
+                }
+
+                drawable.setBounds(
+                    indicatorLeft.toInt(),
+                    barPaddingTop.toInt(),
+                    indicatorRight.toInt(),
+                    barPaddingBottom.toInt()
+                )
+                drawable.draw(canvas)
+            }
+        }
+        super.onDraw(canvas)
+    }
+
     private fun getButtonStyle(ta: TypedArray, index: Int): Int {
         return when (index) {
             0 -> ta.getInt(R.styleable.SegmentedButtonBar_sbButton1Style, BUTTON_STYLE_HORIZONTAL)
@@ -1051,6 +1193,164 @@ class SegmentedButtonBar @JvmOverloads constructor(
     }
 
     // ==========================================
+    // Public API — Sliding Pill Indicator & Tabs
+    // ==========================================
+
+    fun setSlideIndicator(enabled: Boolean) {
+        slideIndicator = enabled
+        isIndicatorPositionInitialized = false
+        if (enabled) {
+            buttonViews.forEach { it.background = ColorDrawable(Color.TRANSPARENT) }
+        }
+        invalidate()
+    }
+
+    fun isSlideIndicator(): Boolean = slideIndicator
+
+    fun setIndicatorDuration(durationMs: Long) {
+        indicatorDurationMs = durationMs
+    }
+
+    fun getIndicatorDuration(): Long = indicatorDurationMs
+
+    /**
+     * ViewPager2 kaydırma işlemi sırasında gösterge pozisyonunu milimetrik olarak günceller.
+     * Updates the sliding indicator position during live ViewPager2 drag gestures.
+     */
+    fun setIndicatorPosition(position: Int, positionOffset: Float) {
+        if (!slideIndicator || position !in buttonViews.indices) return
+        indicatorAnimator?.cancel()
+        val currentView = buttonViews[position]
+        val nextView = buttonViews.getOrNull(position + 1) ?: currentView
+
+        val targetLeft = currentView.left + positionOffset * (nextView.left - currentView.left)
+        val targetRight = currentView.right + positionOffset * (nextView.right - currentView.right)
+
+        indicatorLeft = targetLeft
+        indicatorRight = targetRight
+        isIndicatorPositionInitialized = true
+        invalidate()
+    }
+
+    private fun animateIndicator(targetLeft: Float, targetRight: Float) {
+        indicatorAnimator?.cancel()
+        val startLeft = indicatorLeft
+        val startRight = indicatorRight
+
+        indicatorAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = indicatorDurationMs
+            interpolator = FastOutSlowInInterpolator()
+            addUpdateListener { animator ->
+                val fraction = animator.animatedFraction
+                indicatorLeft = startLeft + fraction * (targetLeft - startLeft)
+                indicatorRight = startRight + fraction * (targetRight - startRight)
+                invalidate()
+            }
+            start()
+        }
+    }
+
+    // ==========================================
+    // Public API — ViewPager2 & Fragment Binding
+    // ==========================================
+
+    /**
+     * SegmentedButtonBar'ı ViewPager2 ile çift yönlü otomatik senkronizasyona bağlar.
+     * Binds SegmentedButtonBar with ViewPager2 for automatic two-way synchronization.
+     */
+    @JvmOverloads
+    fun setupWithViewPager2(
+        viewPager: ViewPager2,
+        smoothScroll: Boolean = true,
+        tabConfig: ((TabConfig, Int) -> Unit)? = null
+    ) {
+        // Önceki dinleyiciyi temizle
+        registeredViewPagerCallback?.let { boundViewPager?.unregisterOnPageChangeCallback(it) }
+        boundViewPager = viewPager
+
+        // Dinamik tab başlıkları / ikonları yapılandırması
+        tabConfig?.let { configCallback ->
+            for (i in 0 until buttonViews.size) {
+                val cfg = TabConfig()
+                configCallback(cfg, i)
+                cfg.text?.let { setButtonText(i, it) }
+                if (cfg.iconRes != 0) {
+                    setButtonIcon(i, cfg.iconRes)
+                }
+                cfg.iconTint?.let { setButtonIconTint(i, it) }
+                cfg.tooltip?.let { setButtonTooltip(i, it) }
+                cfg.contentDescription?.let { setButtonContentDescription(i, it) }
+            }
+        }
+
+        // Taba tıklandığında ViewPager2 sayfasını kaydır
+        buttonViews.forEachIndexed { index, view ->
+            view.setOnClickListener {
+                selectButton(index, animate = true)
+                viewPager.setCurrentItem(index, smoothScroll)
+                buttonClickListeners[index]?.invoke()
+            }
+        }
+
+        // ViewPager2 sayfa kaymalarını dinle
+        val callback = object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
+                if (slideIndicator) {
+                    setIndicatorPosition(position, positionOffset)
+                }
+            }
+
+            override fun onPageSelected(position: Int) {
+                selectButton(position, animate = true)
+            }
+        }
+
+        registeredViewPagerCallback = callback
+        viewPager.registerOnPageChangeCallback(callback)
+
+        // Başlangıç sayfasını senkronize et
+        val initialPage = viewPager.currentItem
+        if (initialPage in buttonViews.indices) {
+            selectButton(initialPage, animate = false)
+        }
+    }
+
+    /**
+     * SegmentedButtonBar sekmelerini FragmentContainerView içindeki Fragment'lar ile bağlar.
+     * Connects tab selections with Fragment transactions.
+     */
+    fun setupWithFragments(
+        fragmentManager: FragmentManager,
+        @IdRes containerId: Int,
+        fragments: List<Fragment>
+    ) {
+        require(fragments.size <= buttonViews.size) {
+            "Fragment sayısı buton sayısından fazla olamaz / Fragment count cannot exceed button count"
+        }
+
+        // Başlangıç fragment'ını yükle
+        val initialIndex = selectedIndex.coerceAtLeast(0)
+        if (initialIndex in fragments.indices) {
+            fragmentManager.beginTransaction()
+                .replace(containerId, fragments[initialIndex])
+                .commit()
+        }
+
+        // Sekme tıklandığında ilgili fragment'ı değiştir
+        setOnTabSelectedListener { position ->
+            if (position in fragments.indices) {
+                fragmentManager.beginTransaction()
+                    .replace(containerId, fragments[position])
+                    .commit()
+            }
+        }
+    }
+
+    fun setOnTabSelectedListener(listener: (position: Int) -> Unit) {
+        onTabSelectedListener = listener
+    }
+
+    // ==========================================
     // Public API — Expandable Animation
     // ==========================================
 
@@ -1159,8 +1459,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
      * Belirtilen butonu seçer, diğer tüm butonların seçimini ve aktifliğini kaldırır.
      * Selects the button at index, clears selection and activation from all other buttons.
      */
-    fun selectButton(index: Int) {
+    @JvmOverloads
+    fun selectButton(index: Int, animate: Boolean = true) {
         if (index !in buttonViews.indices) return
+        val oldIndex = selectedIndex
         selectedIndex = index
         buttonViews.forEachIndexed { i, view ->
             val isTarget = (i == index)
@@ -1172,6 +1474,26 @@ class SegmentedButtonBar @JvmOverloads constructor(
         if (currentStyle == STYLE_EXPANDABLE && collapseOnSelect) {
             updateAnchorVisual(index)
         }
+
+        if (slideIndicator && buttonViews.isNotEmpty()) {
+            val targetView = buttonViews[index]
+            if (targetView.width > 0) {
+                val targetLeft = targetView.left.toFloat()
+                val targetRight = targetView.right.toFloat()
+                if (animate && isIndicatorPositionInitialized) {
+                    animateIndicator(targetLeft, targetRight)
+                } else {
+                    indicatorLeft = targetLeft
+                    indicatorRight = targetRight
+                    isIndicatorPositionInitialized = true
+                    invalidate()
+                }
+            }
+        }
+
+        if (oldIndex != index) {
+            onTabSelectedListener?.invoke(index)
+        }
     }
 
     /**
@@ -1180,6 +1502,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
     fun clearSelection() {
         selectedIndex = -1
         buttonViews.forEach { it.isSelected = false }
+        if (slideIndicator) {
+            isIndicatorPositionInitialized = false
+            invalidate()
+        }
     }
 
     /**
@@ -1237,6 +1563,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
     fun setSelectedBackground(drawable: Drawable?) {
         globalSelectedBackground = drawable
+        if (slideIndicator) {
+            invalidate()
+            return
+        }
         buttonViews.forEachIndexed { i, view ->
             val isCircular = (getButtonStyle(context.obtainStyledAttributes(intArrayOf()), i) == BUTTON_STYLE_CIRCULAR)
             applyButtonBackground(
@@ -1253,6 +1583,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
     fun setSelectedColor(@ColorInt color: Int) {
         globalSelectedColor = color
+        if (slideIndicator) {
+            invalidate()
+            return
+        }
         buttonViews.forEachIndexed { i, view ->
             val isCircular = (currentStyle == STYLE_CIRCULAR)
             applyButtonBackground(

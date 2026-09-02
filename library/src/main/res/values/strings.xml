@@ -11,4 +11,5 @@
     <string name="sb_cd_next">Next</string>
     <string name="sb_cd_back">Back</string>
     <string name="sb_cd_circular">Action</string>
+    <string name="sb_role_tab">Tab</string>
 </resources>

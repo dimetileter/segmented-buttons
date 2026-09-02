@@ -5,18 +5,19 @@
 [![Kotlin](https://img.shields.io/badge/kotlin-2.0.21-blue.svg)](https://kotlinlang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A polished, lightweight, highly customizable Android Segmented Button Bar library built entirely with modern Android standard Views, supporting **5 distinct styles**, XML-first configuration, physics-based spring animations, dark mode, and accessibility.
+A polished, lightweight, highly customizable Android Segmented Button Bar library built entirely with modern Android standard Views, supporting **6 distinct styles**, XML-first configuration, sliding pill indicators, physics-based spring animations, dark mode, ViewPager2/Fragment integration, and TalkBack accessibility.
 
 ---
 
 ## ✨ Features
 
-- 🎯 **5 Display Styles**: `horizontal`, `vertical`, `circular`, `pill`, and `expandable`
+- 🎯 **6 Display Styles**: `horizontal`, `vertical`, `circular`, `pill`, `expandable`, and `tab` (Sliding Pill Indicator & ViewPager2 / Fragment integration)
+- 🛝 **Sliding Pill Indicator**: Smooth, hardware-accelerated indicator sliding across tabs with real-time ViewPager2 drag tracking.
 - 🎨 **Design System Fidelity**: Exact concentric corner radii ($R_{\text{button}} = R_{\text{bar}} - \text{padding}$), pixel-perfect spacing, bounded and unbounded ripples.
 - 🌓 **Full Dark Mode**: Automatic theme-aware color tokens and contrast adherence.
 - 🚀 **Physics-Based Spring Animations**: Fluid expand/collapse animations with natural overshoot dynamics.
 - ⚡ **Zero External Heavy Dependencies**: Pure Android Views, no ViewBinding overhead in library, minSdk 26+.
-- ♿ **Accessibility First**: WCAG-compliant touch targets, dynamic content descriptions, and TalkBack optimization.
+- ♿ **Accessibility First**: WCAG-compliant touch targets, dynamic content descriptions, and native TabWidget / Tab role TalkBack semantics.
 
 ---
 
@@ -43,7 +44,7 @@ In your module's `build.gradle.kts` (e.g. `app/build.gradle.kts`):
 
 ```kotlin
 dependencies {
-    implementation("com.github.dimetileter:segmented-buttons:v1.0.0")
+    implementation("com.github.dimetileter:segmented-buttons:v1.0.4")
 }
 ```
 
@@ -150,12 +151,46 @@ An animated bar that starts collapsed (44×44dp) and smoothly expands on tap. Su
     app:sbExpandDirection="end" />
 ```
 
+### 6. Modern TabBar Style (`tab`)
+
+A premium TabBar with a **smoothly sliding selection pill indicator** that animates beneath tabs. Fully compatible with `ViewPager2` (including live swipe gesture tracking) and Fragment navigation:
+
+```xml
+<com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
+    android:id="@+id/tabBar"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:sbStyle="tab"
+    app:sbButtonCount="3"
+    app:sbButton1Text="Home"
+    app:sbButton2Text="Explore"
+    app:sbButton3Text="Profile" />
+```
+
 ---
 
 ## 💻 Kotlin API Reference
 
 ```kotlin
 val segmentedBar = findViewById<SegmentedButtonBar>(R.id.segmentedBar)
+
+// ViewPager2 Two-Way Synchronization (with live swipe tracking)
+segmentedBar.setupWithViewPager2(viewPager2) { config, position ->
+    config.text = "Page $position"
+    // config.iconRes = R.drawable.ic_tab
+}
+
+// FragmentContainerView Integration
+segmentedBar.setupWithFragments(
+    fragmentManager = supportFragmentManager,
+    containerId = R.id.fragmentContainer,
+    fragments = listOf(HomeFragment(), ExploreFragment(), ProfileFragment())
+)
+
+// Tab Selection Callback
+segmentedBar.setOnTabSelectedListener { position ->
+    // Handle tab change
+}
 
 // Button Click Listeners
 segmentedBar.setOnButton1Click { /* Handle Button 1 click */ }
@@ -227,7 +262,7 @@ segmentedBar.setBarBackgroundColor(Color.parseColor("#222222"))
 
 | Attribute | Format | Default | Description |
 |---|---|---|---|
-| `app:sbStyle` | `enum` | `horizontal` | Button bar layout style (`horizontal`, `vertical`, `circular`, `pill`, `expandable`) |
+| `app:sbStyle` | `enum` | `horizontal` | Button bar layout style (`horizontal`, `vertical`, `circular`, `pill`, `expandable`, `tab`) |
 | `app:sbButtonCount` | `integer` | `2` (or `3`) | Total number of buttons (`1` to `6`) |
 | `app:sbSelectedIndex` | `integer` | `0` | Initial selected button index (`-1` for none) |
 | `app:sbAllActivated` | `boolean` | `false` | Set `isActivated` for all buttons at once |
@@ -237,6 +272,8 @@ segmentedBar.setBarBackgroundColor(Color.parseColor("#222222"))
 | `app:sbSelectedColor` | `color` | `@null` | Custom solid color for selected buttons |
 | `app:sbBarBackground` | `reference\|color` | `@null` | Override bar container background |
 | `app:sbAutoTooltip` | `boolean` | `true` | Automatically show tooltips on button long-press |
+| `app:sbSlideIndicator` | `boolean` | `false` (`true` on `tab`) | Smooth sliding pill indicator animation across tabs |
+| `app:sbIndicatorDuration` | `integer` | `250` (ms) | Duration of the sliding pill animation in milliseconds |
 | `app:sbButton1Style` .. `app:sbButton6Style` | `enum` | `horizontal` | Individual button style for hybrid bars (`horizontal`, `circular`, `pill`) |
 | `app:sbButton1Icon` .. `app:sbButton6Icon` | `reference` | `@null` | Icon resource drawable for the corresponding button |
 | `app:sbButton1Text` .. `app:sbButton6Text` | `string` | `@null` | Text label for the corresponding button |

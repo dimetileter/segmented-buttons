@@ -21,6 +21,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
+        // TabBar with Sliding Indicator
+        binding.tabBarDemo.setOnTabSelectedListener { position ->
+            val tabName = when (position) {
+                0 -> "Home"
+                1 -> "Explore"
+                2 -> "Profile"
+                else -> "Tab ${position + 1}"
+            }
+            binding.statusText.text = "Status: TabBar selected -> $tabName"
+        }
+
         // 5-Button Bar with Circular action and icon tint
         binding.fiveButtonBar.setOnButton1Click {
             binding.statusText.text = "Status: 5-Button -> Button 1 clicked"

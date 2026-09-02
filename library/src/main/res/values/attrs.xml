@@ -12,6 +12,7 @@
             <enum name="circular" value="2" />
             <enum name="pill" value="3" />
             <enum name="expandable" value="4" />
+            <enum name="tab" value="5" />
         </attr>
 
         <!-- Button count (1-6) / Buton sayısı -->
@@ -38,6 +39,12 @@
 
         <!-- Auto-collapse expandable bar after selecting a child button / Seçim sonrası otomatik daralma -->
         <attr name="sbCollapseOnSelect" format="boolean" />
+
+        <!-- Sliding selection pill indicator animation toggle / Kayan seçim göstergesi animasyon anahtarı -->
+        <attr name="sbSlideIndicator" format="boolean" />
+
+        <!-- Sliding selection indicator animation duration in ms / Gösterge kayma animasyon süresi (ms) -->
+        <attr name="sbIndicatorDuration" format="integer" />
 
         <!-- Bar elevation & shadow / Çubuk gölge ve yükseklik seviyesi -->
         <attr name="sbElevation" format="dimension" />
