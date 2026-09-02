@@ -19,6 +19,7 @@
         android:layout_gravity="center"
         android:scaleType="centerInside"
         android:contentDescription="@null"
+        android:duplicateParentState="true"
         android:visibility="gone"
         tools:visibility="visible" />
 
@@ -31,6 +32,7 @@
         android:gravity="center"
         android:textColor="@color/sb_button_text"
         android:textSize="@dimen/sb_button_text_size"
+        android:duplicateParentState="true"
         android:maxLines="1"
         android:ellipsize="end"
         android:visibility="gone"

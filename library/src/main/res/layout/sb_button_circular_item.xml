@@ -19,5 +19,6 @@
         android:layout_height="match_parent"
         android:scaleType="center"
         android:contentDescription="@null"
+        android:duplicateParentState="true"
         tools:src="@drawable/ic_sb_arrow_next" />
 </FrameLayout>

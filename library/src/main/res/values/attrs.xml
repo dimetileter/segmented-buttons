@@ -53,6 +53,14 @@
         <attr name="sbShowUnselectedBackground" format="boolean" />
         <attr name="sbUnselectedButtonColor" format="color|reference" />
 
+        <!-- Custom Backgrounds, Colors and Gradients / Özel Arkaplan, Renk ve Gradyan Atamaları -->
+        <attr name="sbSelectedBackground" format="reference" />
+        <attr name="sbSelectedColor" format="color|reference" />
+        <attr name="sbBarBackground" format="reference|color" />
+
+        <!-- Tooltip and Accessibility / Uzun Basma İpucu ve Erişilebilirlik -->
+        <attr name="sbAutoTooltip" format="boolean" />
+
         <!-- Per-button individual styles for hybrid bars / Hibrit barlar için buton bazlı stiller -->
         <attr name="sbButton1Style" format="enum">
             <enum name="horizontal" value="0" />
@@ -85,13 +93,18 @@
             <enum name="pill" value="2" />
         </attr>
 
-        <!-- Per-button resources & states (1..6) / Buton kaynakları ve durumları -->
+        <!-- Per-button resources, states, tooltips & custom backgrounds (1..6) -->
         <attr name="sbButton1Icon" format="reference" />
         <attr name="sbButton1Text" format="string" />
         <attr name="sbButton1IconTint" format="color|reference" />
         <attr name="sbButton1Selected" format="boolean" />
         <attr name="sbButton1Activated" format="boolean" />
         <attr name="sbButton1Enabled" format="boolean" />
+        <attr name="sbButton1ContentDescription" format="string" />
+        <attr name="sbButton1Tooltip" format="string" />
+        <attr name="sbButton1SelectedBackground" format="reference" />
+        <attr name="sbButton1SelectedColor" format="color|reference" />
+        <attr name="sbButton1Background" format="reference" />
 
         <attr name="sbButton2Icon" format="reference" />
         <attr name="sbButton2Text" format="string" />
@@ -99,6 +112,11 @@
         <attr name="sbButton2Selected" format="boolean" />
         <attr name="sbButton2Activated" format="boolean" />
         <attr name="sbButton2Enabled" format="boolean" />
+        <attr name="sbButton2ContentDescription" format="string" />
+        <attr name="sbButton2Tooltip" format="string" />
+        <attr name="sbButton2SelectedBackground" format="reference" />
+        <attr name="sbButton2SelectedColor" format="color|reference" />
+        <attr name="sbButton2Background" format="reference" />
 
         <attr name="sbButton3Icon" format="reference" />
         <attr name="sbButton3Text" format="string" />
@@ -106,6 +124,11 @@
         <attr name="sbButton3Selected" format="boolean" />
         <attr name="sbButton3Activated" format="boolean" />
         <attr name="sbButton3Enabled" format="boolean" />
+        <attr name="sbButton3ContentDescription" format="string" />
+        <attr name="sbButton3Tooltip" format="string" />
+        <attr name="sbButton3SelectedBackground" format="reference" />
+        <attr name="sbButton3SelectedColor" format="color|reference" />
+        <attr name="sbButton3Background" format="reference" />
 
         <attr name="sbButton4Icon" format="reference" />
         <attr name="sbButton4Text" format="string" />
@@ -113,6 +136,11 @@
         <attr name="sbButton4Selected" format="boolean" />
         <attr name="sbButton4Activated" format="boolean" />
         <attr name="sbButton4Enabled" format="boolean" />
+        <attr name="sbButton4ContentDescription" format="string" />
+        <attr name="sbButton4Tooltip" format="string" />
+        <attr name="sbButton4SelectedBackground" format="reference" />
+        <attr name="sbButton4SelectedColor" format="color|reference" />
+        <attr name="sbButton4Background" format="reference" />
 
         <attr name="sbButton5Icon" format="reference" />
         <attr name="sbButton5Text" format="string" />
@@ -120,6 +148,11 @@
         <attr name="sbButton5Selected" format="boolean" />
         <attr name="sbButton5Activated" format="boolean" />
         <attr name="sbButton5Enabled" format="boolean" />
+        <attr name="sbButton5ContentDescription" format="string" />
+        <attr name="sbButton5Tooltip" format="string" />
+        <attr name="sbButton5SelectedBackground" format="reference" />
+        <attr name="sbButton5SelectedColor" format="color|reference" />
+        <attr name="sbButton5Background" format="reference" />
 
         <attr name="sbButton6Icon" format="reference" />
         <attr name="sbButton6Text" format="string" />
@@ -127,5 +160,10 @@
         <attr name="sbButton6Selected" format="boolean" />
         <attr name="sbButton6Activated" format="boolean" />
         <attr name="sbButton6Enabled" format="boolean" />
+        <attr name="sbButton6ContentDescription" format="string" />
+        <attr name="sbButton6Tooltip" format="string" />
+        <attr name="sbButton6SelectedBackground" format="reference" />
+        <attr name="sbButton6SelectedColor" format="color|reference" />
+        <attr name="sbButton6Background" format="reference" />
     </declare-styleable>
 </resources>

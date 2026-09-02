@@ -186,14 +186,36 @@ segmentedBar.setButtonActivated(index = 0, activated = true)
 segmentedBar.setButtonEnabled(index = 0, enabled = false)
 val selectedIndex = segmentedBar.getSelectedButtonIndex()
 
-// Icon Tint Management
-segmentedBar.setIconTint(Color.RED) // Global tint
-segmentedBar.setButtonIconTint(index = 1, Color.BLUE) // Per-button tint
+// Tooltip & TalkBack Accessibility
+segmentedBar.setButtonContentDescription(0, "Capture Photo")
+segmentedBar.setButtonTooltip(0, "Camera")
+segmentedBar.setOnButton1LongClick {
+    // Custom long press action
+    true
+}
 
-// Dynamic Text & Icon Updates
-segmentedBar.setButtonText(0, "New Title")
-segmentedBar.setButtonIcon(0, R.drawable.ic_new_icon)
+// Custom Colors & Gradient Backgrounds
+segmentedBar.setSelectedColor(Color.parseColor("#FF5722"))
+segmentedBar.setButtonSelectedBackground(0, myGradientDrawable)
+segmentedBar.setBarBackgroundColor(Color.parseColor("#222222"))
 ```
+
+---
+
+## 💡 Recommended Practices & Tips
+
+- **Handling Many Buttons (4+ or 5+)**: When using many buttons in a single bar (e.g. 4, 5 or 6 items), it is strongly recommended to prefer **circular** (icon-only) button styles (`app:sbButton*Style="circular"`) and omit text labels. Text labels on 4+ items may cause cramped horizontal spacing on smaller screens, whereas icon-only circular buttons maintain clean touch targets, optical harmony, and compact responsive layouts.
+- **Outline vs. Filled Icon States**: For optimal visual feedback, provide a `StateListDrawable` (or dynamic state drawable) for button icons so that when a button becomes selected (`android:state_selected="true"`), its icon automatically switches to a **filled** variant (e.g. `ic_bookmark_filled`), and when deselected, it reverts back to an **outlined** variant (e.g. `ic_bookmark_outlined`):
+  ```xml
+  <!-- res/drawable/ic_state_bookmark.xml -->
+  <selector xmlns:android="http://schemas.android.com/apk/res/android">
+      <item android:state_selected="true" android:drawable="@drawable/ic_bookmark_filled" />
+      <item android:state_activated="true" android:drawable="@drawable/ic_bookmark_filled" />
+      <item android:drawable="@drawable/ic_bookmark_outline" />
+  </selector>
+  ```
+- **Accessibility & Tooltips**: Always provide meaningful `app:sbButton*ContentDescription` or `app:sbButton*Tooltip` for icon-only buttons so TalkBack screen readers can announce the action and users can long-press to reveal the action tooltip.
+- **Custom Gradients & Colors**: You can completely customize the active button background with brand gradients or solid colors using `app:sbSelectedBackground` or `app:sbSelectedColor`.
 
 ---
 
@@ -207,10 +229,18 @@ segmentedBar.setButtonIcon(0, R.drawable.ic_new_icon)
 | `app:sbAllActivated` | `boolean` | `false` | Set `isActivated` for all buttons at once |
 | `app:sbPillActivated` | `boolean` | `false` | Initial locked/active state for pill buttons |
 | `app:sbIconTint` | `color` | `@null` | Global tint color or ColorStateList applied to all button icons |
+| `app:sbSelectedBackground` | `reference` | `@null` | Custom drawable or gradient for selected buttons |
+| `app:sbSelectedColor` | `color` | `@null` | Custom solid color for selected buttons |
+| `app:sbBarBackground` | `reference\|color` | `@null` | Override bar container background |
+| `app:sbAutoTooltip` | `boolean` | `true` | Automatically show tooltips on button long-press |
 | `app:sbButton1Style` .. `app:sbButton6Style` | `enum` | `horizontal` | Individual button style for hybrid bars (`horizontal`, `circular`, `pill`) |
 | `app:sbButton1Icon` .. `app:sbButton6Icon` | `reference` | `@null` | Icon resource drawable for the corresponding button |
 | `app:sbButton1Text` .. `app:sbButton6Text` | `string` | `@null` | Text label for the corresponding button |
 | `app:sbButton1IconTint` .. `app:sbButton6IconTint` | `color` | `@null` | Individual icon tint per button |
+| `app:sbButton1Tooltip` .. `app:sbButton6Tooltip` | `string` | `@null` | Tooltip text displayed on long press |
+| `app:sbButton1ContentDescription` .. `app:sbButton6ContentDescription` | `string` | `@null` | TalkBack accessibility content description |
+| `app:sbButton1SelectedBackground` .. `app:sbButton6SelectedBackground` | `reference` | `@null` | Custom selected background drawable/gradient per button |
+| `app:sbButton1SelectedColor` .. `app:sbButton6SelectedColor` | `color` | `@null` | Custom selected color per button |
 | `app:sbButton1Selected` .. `app:sbButton6Selected` | `boolean` | `false` (btn 1: `true`) | Initial selection state (`isSelected`) per button |
 | `app:sbButton1Activated` .. `app:sbButton6Activated` | `boolean` | `false` | Initial activation state (`isActivated`) per button |
 | `app:sbButton1Enabled` .. `app:sbButton6Enabled` | `boolean` | `true` | Enable/disable state (`isEnabled`) per button |

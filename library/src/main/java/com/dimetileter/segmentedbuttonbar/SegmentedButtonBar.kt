@@ -5,6 +5,11 @@ import android.animation.AnimatorListenerAdapter
 import android.content.Context
 import android.content.res.ColorStateList
 import android.content.res.TypedArray
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.StateListDrawable
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -17,15 +22,17 @@ import android.widget.TextView
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.appcompat.widget.TooltipCompat
 import androidx.core.content.ContextCompat
 import androidx.core.widget.ImageViewCompat
 
 /**
- * SegmentedButtonBar — Özelleştirilebilir, hibrit stilleri, ikon renklendirmeyi (Icon Tint)
- * ve gelişmiş XML durum yönetimini destekleyen Segmented Buton bileşeni.
+ * SegmentedButtonBar — Özelleştirilebilir, hibrit stilleri, ikon ve arkaplan renklendirmesini (Icon Tint, Gradient/Color BG),
+ * TalkBack erişilebilirliğini, Tooltip (uzun basma) desteğini ve gelişmiş XML durum yönetimini destekleyen Segmented Buton bileşeni.
  *
  * SegmentedButtonBar — Customizable, dynamic Segmented Button component with hybrid styles,
- * icon tinting, and XML-first state management (selected, activated, enabled).
+ * icon tinting, custom gradients/colors, TalkBack accessibility, Tooltip (long press) support,
+ * and XML-first state management (selected, activated, enabled).
  */
 class SegmentedButtonBar @JvmOverloads constructor(
     context: Context,
@@ -66,12 +73,17 @@ class SegmentedButtonBar @JvmOverloads constructor(
     private var currentStyle: Int = STYLE_HORIZONTAL
     private var buttonCount: Int = DEFAULT_BUTTON_COUNT
     private var autoSelect: Boolean = true
+    private var autoTooltip: Boolean = true
     private var pillType: Int = PILL_NEXT
     private var expandDirection: Int = EXPAND_END
     private var maxWidthPx: Int = -1
 
     private var globalIconTint: ColorStateList? = null
     private var globalAllActivated: Boolean? = null
+    private var globalSelectedBackground: Drawable? = null
+    private var globalSelectedColor: Int? = null
+    private var showUnselectedBackground: Boolean = false
+    private var unselectedButtonColor: Int? = null
 
     private var isExpanded: Boolean = false
     private var isAnimating: Boolean = false
@@ -79,6 +91,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
     private val buttonViews = mutableListOf<View>()
     private val buttonClickListeners = mutableMapOf<Int, () -> Unit>()
+    private val buttonLongClickListeners = mutableMapOf<Int, () -> Boolean>()
     private var pillClickListener: (() -> Unit)? = null
     private var selectedIndex: Int = 0
 
@@ -105,6 +118,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
         val rawCount = ta.getInt(R.styleable.SegmentedButtonBar_sbButtonCount, defaultCount)
         buttonCount = rawCount.coerceIn(MIN_BUTTON_COUNT, MAX_BUTTON_COUNT)
         autoSelect = ta.getBoolean(R.styleable.SegmentedButtonBar_sbAutoSelect, true)
+        autoTooltip = ta.getBoolean(R.styleable.SegmentedButtonBar_sbAutoTooltip, true)
         pillType = ta.getInt(R.styleable.SegmentedButtonBar_sbPillType, PILL_NEXT)
         expandDirection = ta.getInt(R.styleable.SegmentedButtonBar_sbExpandDirection, EXPAND_END)
         maxWidthPx = ta.getDimensionPixelSize(R.styleable.SegmentedButtonBar_sbMaxWidth, -1)
@@ -112,6 +126,23 @@ class SegmentedButtonBar @JvmOverloads constructor(
         globalIconTint = ta.getColorStateList(R.styleable.SegmentedButtonBar_sbIconTint)
         if (ta.hasValue(R.styleable.SegmentedButtonBar_sbAllActivated)) {
             globalAllActivated = ta.getBoolean(R.styleable.SegmentedButtonBar_sbAllActivated, false)
+        }
+
+        globalSelectedBackground = ta.getDrawable(R.styleable.SegmentedButtonBar_sbSelectedBackground)
+        if (ta.hasValue(R.styleable.SegmentedButtonBar_sbSelectedColor)) {
+            globalSelectedColor = ta.getColor(R.styleable.SegmentedButtonBar_sbSelectedColor, Color.WHITE)
+        }
+
+        showUnselectedBackground = ta.getBoolean(R.styleable.SegmentedButtonBar_sbShowUnselectedBackground, false)
+        if (ta.hasValue(R.styleable.SegmentedButtonBar_sbUnselectedButtonColor)) {
+            unselectedButtonColor = ta.getColor(R.styleable.SegmentedButtonBar_sbUnselectedButtonColor, Color.TRANSPARENT)
+        }
+
+        val customBarBg = ta.getDrawable(R.styleable.SegmentedButtonBar_sbBarBackground)
+        if (customBarBg != null) {
+            background = customBarBg
+        } else {
+            background = ContextCompat.getDrawable(context, R.drawable.bg_segmented_button_bar)
         }
 
         val elevationVal = ta.getDimension(R.styleable.SegmentedButtonBar_sbElevation, 0f)
@@ -133,12 +164,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
     /**
      * Yatay segmented buton çubuğunu yapılandırır.
      * Standart ve hibrit (ör. 2 yatay + 1 dairesel) butonları destekler.
-     * Configures the horizontal segmented button bar.
      */
     private fun setupHorizontal(ta: TypedArray) {
         orientation = HORIZONTAL
         clipToPadding = true
-        background = ContextCompat.getDrawable(context, R.drawable.bg_segmented_button_bar)
 
         val barPadding = context.resources.getDimensionPixelSize(R.dimen.sb_bar_padding)
         val buttonGap = context.resources.getDimensionPixelSize(R.dimen.sb_button_gap)
@@ -163,6 +192,9 @@ class SegmentedButtonBar @JvmOverloads constructor(
             val (iconRes, textVal) = getButtonAttributes(ta, i)
             val (explicitSelected, explicitActivated, explicitEnabled) = getButtonStateAttributes(ta, i)
             val perButtonTint = getButtonIconTint(ta, i) ?: globalIconTint
+            val (customBg, selectedBg, selectedCol) = getButtonBackgroundAttributes(ta, i)
+            val customCd = getButtonContentDescriptionAttr(ta, i)
+            val customTooltip = getButtonTooltipAttr(ta, i)
             val buttonStyle = getButtonStyle(ta, i)
 
             val buttonIndex = i
@@ -176,7 +208,23 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 iconView.setImageResource(finalIcon)
                 perButtonTint?.let { ImageViewCompat.setImageTintList(iconView, it) }
 
-                itemView.contentDescription = textVal ?: getDefaultContentDescription(i)
+                applyButtonBackground(
+                    itemView,
+                    isCircular = true,
+                    customBackgroundDrawable = customBg,
+                    selectedCustomDrawable = selectedBg ?: globalSelectedBackground,
+                    selectedCustomColor = selectedCol ?: globalSelectedColor,
+                    showUnselectedBg = showUnselectedBackground,
+                    unselectedCustomColor = unselectedButtonColor
+                )
+
+                val finalCd = customCd ?: textVal ?: getDefaultContentDescription(i)
+                itemView.contentDescription = finalCd
+
+                val tooltipText = customTooltip ?: textVal ?: customCd
+                if (autoTooltip && !tooltipText.isNullOrEmpty()) {
+                    TooltipCompat.setTooltipText(itemView, tooltipText)
+                }
 
                 val params = LayoutParams(circularHybridSize, circularHybridSize).apply {
                     if (i > 0) {
@@ -202,6 +250,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
                     }
                     buttonClickListeners[buttonIndex]?.invoke()
                 }
+
+                itemView.setOnLongClickListener {
+                    buttonLongClickListeners[buttonIndex]?.invoke() ?: false
+                }
             } else {
                 // Standart Yatay Buton / Flexible Horizontal Button
                 itemView = inflater.inflate(R.layout.sb_button_horizontal_item, this, false)
@@ -209,6 +261,16 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 val textView = itemView.findViewById<TextView>(R.id.sb_item_text)
 
                 perButtonTint?.let { ImageViewCompat.setImageTintList(iconView, it) }
+
+                applyButtonBackground(
+                    itemView,
+                    isCircular = false,
+                    customBackgroundDrawable = customBg,
+                    selectedCustomDrawable = selectedBg ?: globalSelectedBackground,
+                    selectedCustomColor = selectedCol ?: globalSelectedColor,
+                    showUnselectedBg = showUnselectedBackground,
+                    unselectedCustomColor = unselectedButtonColor
+                )
 
                 val hasIcon = (iconRes != 0)
                 val hasText = !textVal.isNullOrEmpty()
@@ -244,7 +306,13 @@ class SegmentedButtonBar @JvmOverloads constructor(
                     }
                 }
 
-                itemView.contentDescription = textVal ?: getDefaultContentDescription(i)
+                val finalCd = customCd ?: textVal ?: getDefaultContentDescription(i)
+                itemView.contentDescription = finalCd
+
+                val tooltipText = customTooltip ?: textVal ?: customCd
+                if (autoTooltip && !tooltipText.isNullOrEmpty()) {
+                    TooltipCompat.setTooltipText(itemView, tooltipText)
+                }
 
                 val params = LayoutParams(0, buttonHeight, 1f).apply {
                     if (i > 0) {
@@ -271,6 +339,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
                     }
                     buttonClickListeners[buttonIndex]?.invoke()
                 }
+
+                itemView.setOnLongClickListener {
+                    buttonLongClickListeners[buttonIndex]?.invoke() ?: false
+                }
             }
 
             buttonViews.add(itemView)
@@ -284,12 +356,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
     /**
      * Dikey segmented buton çubuğunu yapılandırır.
-     * Configures the vertical segmented button bar.
      */
     private fun setupVertical(ta: TypedArray) {
         orientation = VERTICAL
         clipToPadding = true
-        background = ContextCompat.getDrawable(context, R.drawable.bg_segmented_button_bar)
 
         val barPadding = context.resources.getDimensionPixelSize(R.dimen.sb_bar_padding)
         val buttonGap = context.resources.getDimensionPixelSize(R.dimen.sb_button_gap)
@@ -319,6 +389,20 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
             val (iconRes, textVal) = getButtonAttributes(ta, i)
             val (explicitSelected, explicitActivated, explicitEnabled) = getButtonStateAttributes(ta, i)
+            val (customBg, selectedBg, selectedCol) = getButtonBackgroundAttributes(ta, i)
+            val customCd = getButtonContentDescriptionAttr(ta, i)
+            val customTooltip = getButtonTooltipAttr(ta, i)
+
+            applyButtonBackground(
+                itemView,
+                isCircular = false,
+                customBackgroundDrawable = customBg,
+                selectedCustomDrawable = selectedBg ?: globalSelectedBackground,
+                selectedCustomColor = selectedCol ?: globalSelectedColor,
+                showUnselectedBg = showUnselectedBackground,
+                unselectedCustomColor = unselectedButtonColor
+            )
+
             val hasIcon = (iconRes != 0)
             val hasText = !textVal.isNullOrEmpty()
 
@@ -351,7 +435,13 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 }
             }
 
-            itemView.contentDescription = textVal ?: getDefaultContentDescription(i)
+            val finalCd = customCd ?: textVal ?: getDefaultContentDescription(i)
+            itemView.contentDescription = finalCd
+
+            val tooltipText = customTooltip ?: textVal ?: customCd
+            if (autoTooltip && !tooltipText.isNullOrEmpty()) {
+                TooltipCompat.setTooltipText(itemView, tooltipText)
+            }
 
             val params = LayoutParams(buttonWidth, buttonHeight).apply {
                 if (i > 0) {
@@ -379,6 +469,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 buttonClickListeners[buttonIndex]?.invoke()
             }
 
+            itemView.setOnLongClickListener {
+                buttonLongClickListeners[buttonIndex]?.invoke() ?: false
+            }
+
             buttonViews.add(itemView)
             addView(itemView)
         }
@@ -390,12 +484,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
     /**
      * Dairesel tekil buton stilini yapılandırır.
-     * Configures the circular single button style.
      */
     private fun setupCircular(ta: TypedArray) {
         orientation = HORIZONTAL
         clipToPadding = true
-        background = ContextCompat.getDrawable(context, R.drawable.bg_segmented_button_bar)
 
         val barPadding = context.resources.getDimensionPixelSize(R.dimen.sb_bar_padding)
         val circularSize = context.resources.getDimensionPixelSize(R.dimen.sb_circular_button_size)
@@ -411,13 +503,33 @@ class SegmentedButtonBar @JvmOverloads constructor(
         val perButtonTint = getButtonIconTint(ta, 0) ?: globalIconTint
         perButtonTint?.let { ImageViewCompat.setImageTintList(iconView, it) }
 
+        val (customBg, selectedBg, selectedCol) = getButtonBackgroundAttributes(ta, 0)
+        applyButtonBackground(
+            circularView,
+            isCircular = true,
+            customBackgroundDrawable = customBg,
+            selectedCustomDrawable = selectedBg ?: globalSelectedBackground,
+            selectedCustomColor = selectedCol ?: globalSelectedColor,
+            showUnselectedBg = showUnselectedBackground,
+            unselectedCustomColor = unselectedButtonColor
+        )
+
         val customIcon = ta.getResourceId(R.styleable.SegmentedButtonBar_sbButton1Icon, 0)
         val customText = ta.getString(R.styleable.SegmentedButtonBar_sbButton1Text)
+        val customCd = getButtonContentDescriptionAttr(ta, 0)
+        val customTooltip = getButtonTooltipAttr(ta, 0)
         val (explicitSelected, explicitActivated, explicitEnabled) = getButtonStateAttributes(ta, 0)
 
         val finalIcon = if (customIcon != 0) customIcon else R.drawable.ic_sb_arrow_next
         iconView.setImageResource(finalIcon)
-        circularView.contentDescription = customText ?: context.getString(R.string.sb_cd_circular)
+
+        val finalCd = customCd ?: customText ?: context.getString(R.string.sb_cd_circular)
+        circularView.contentDescription = finalCd
+
+        val tooltipText = customTooltip ?: customText ?: customCd
+        if (autoTooltip && !tooltipText.isNullOrEmpty()) {
+            TooltipCompat.setTooltipText(circularView, tooltipText)
+        }
 
         circularView.layoutParams = LayoutParams(circularSize, circularSize)
         circularView.isSelected = explicitSelected ?: false
@@ -428,18 +540,20 @@ class SegmentedButtonBar @JvmOverloads constructor(
             buttonClickListeners[0]?.invoke()
         }
 
+        circularView.setOnLongClickListener {
+            buttonLongClickListeners[0]?.invoke() ?: false
+        }
+
         buttonViews.add(circularView)
         addView(circularView)
     }
 
     /**
      * Pill (Next / Back / Text) buton stilini yapılandırır.
-     * Configures the Pill (Next / Back / Text) button style.
      */
     private fun setupPill(ta: TypedArray) {
         orientation = HORIZONTAL
         clipToPadding = true
-        background = ContextCompat.getDrawable(context, R.drawable.bg_segmented_button_bar)
 
         val barPadding = context.resources.getDimensionPixelSize(R.dimen.sb_bar_padding)
         val buttonHeight = context.resources.getDimensionPixelSize(R.dimen.sb_button_height)
@@ -457,8 +571,21 @@ class SegmentedButtonBar @JvmOverloads constructor(
         val perButtonTint = getButtonIconTint(ta, 0) ?: globalIconTint
         perButtonTint?.let { ImageViewCompat.setImageTintList(iconView, it) }
 
+        val (customBg, selectedBg, selectedCol) = getButtonBackgroundAttributes(ta, 0)
+        applyButtonBackground(
+            pillView,
+            isCircular = false,
+            customBackgroundDrawable = customBg,
+            selectedCustomDrawable = selectedBg ?: globalSelectedBackground,
+            selectedCustomColor = selectedCol ?: globalSelectedColor,
+            showUnselectedBg = showUnselectedBackground,
+            unselectedCustomColor = unselectedButtonColor
+        )
+
         val customIcon = ta.getResourceId(R.styleable.SegmentedButtonBar_sbButton1Icon, 0)
         val customText = ta.getString(R.styleable.SegmentedButtonBar_sbButton1Text)
+        val customCd = getButtonContentDescriptionAttr(ta, 0)
+        val customTooltip = getButtonTooltipAttr(ta, 0)
 
         val (explicitSelected, explicitActivated, explicitEnabled) = getButtonStateAttributes(ta, 0)
         val initialPillActivated = if (ta.hasValue(R.styleable.SegmentedButtonBar_sbPillActivated)) {
@@ -473,21 +600,26 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 iconView.setImageResource(iconRes)
                 iconView.visibility = View.VISIBLE
                 textView.visibility = View.GONE
-                pillView.contentDescription = customText ?: context.getString(R.string.sb_cd_next)
+                pillView.contentDescription = customCd ?: customText ?: context.getString(R.string.sb_cd_next)
             }
             PILL_BACK -> {
                 val iconRes = if (customIcon != 0) customIcon else R.drawable.ic_sb_arrow_back
                 iconView.setImageResource(iconRes)
                 iconView.visibility = View.VISIBLE
                 textView.visibility = View.GONE
-                pillView.contentDescription = customText ?: context.getString(R.string.sb_cd_back)
+                pillView.contentDescription = customCd ?: customText ?: context.getString(R.string.sb_cd_back)
             }
             PILL_TEXT -> {
                 iconView.visibility = View.GONE
                 textView.text = customText ?: context.getString(R.string.sb_cd_next)
                 textView.visibility = View.VISIBLE
-                pillView.contentDescription = customText ?: context.getString(R.string.sb_cd_next)
+                pillView.contentDescription = customCd ?: customText ?: context.getString(R.string.sb_cd_next)
             }
+        }
+
+        val tooltipText = customTooltip ?: customText ?: customCd
+        if (autoTooltip && !tooltipText.isNullOrEmpty()) {
+            TooltipCompat.setTooltipText(pillView, tooltipText)
         }
 
         pillView.layoutParams = LayoutParams(minWidth, buttonHeight)
@@ -500,18 +632,20 @@ class SegmentedButtonBar @JvmOverloads constructor(
             buttonClickListeners[0]?.invoke()
         }
 
+        pillView.setOnLongClickListener {
+            buttonLongClickListeners[0]?.invoke() ?: false
+        }
+
         buttonViews.add(pillView)
         addView(pillView)
     }
 
     /**
      * Animasyonlu genişleyen (Expandable) buton stilini yapılandırır.
-     * Configures the animated Expandable button style.
      */
     private fun setupExpandable(ta: TypedArray) {
         orientation = HORIZONTAL
         clipToPadding = true
-        background = ContextCompat.getDrawable(context, R.drawable.bg_segmented_button_bar)
 
         val barPadding = context.resources.getDimensionPixelSize(R.dimen.sb_bar_padding)
         val buttonGap = context.resources.getDimensionPixelSize(R.dimen.sb_button_gap)
@@ -532,10 +666,30 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
             val (iconRes, textVal) = getButtonAttributes(ta, i)
             val (explicitSelected, explicitActivated, explicitEnabled) = getButtonStateAttributes(ta, i)
+            val (customBg, selectedBg, selectedCol) = getButtonBackgroundAttributes(ta, i)
+            val customCd = getButtonContentDescriptionAttr(ta, i)
+            val customTooltip = getButtonTooltipAttr(ta, i)
+
+            applyButtonBackground(
+                itemView,
+                isCircular = true,
+                customBackgroundDrawable = customBg,
+                selectedCustomDrawable = selectedBg ?: globalSelectedBackground,
+                selectedCustomColor = selectedCol ?: globalSelectedColor,
+                showUnselectedBg = showUnselectedBackground,
+                unselectedCustomColor = unselectedButtonColor
+            )
+
             val finalIcon = if (iconRes != 0) iconRes else R.drawable.ic_sb_arrow_next
             iconView.setImageResource(finalIcon)
 
-            itemView.contentDescription = textVal ?: getDefaultContentDescription(i)
+            val finalCd = customCd ?: textVal ?: getDefaultContentDescription(i)
+            itemView.contentDescription = finalCd
+
+            val tooltipText = customTooltip ?: textVal ?: customCd
+            if (autoTooltip && !tooltipText.isNullOrEmpty()) {
+                TooltipCompat.setTooltipText(itemView, tooltipText)
+            }
 
             val params = LayoutParams(circularSize, circularSize).apply {
                 if (i > 0) {
@@ -565,11 +719,96 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 }
             }
 
+            itemView.setOnLongClickListener {
+                buttonLongClickListeners[buttonIndex]?.invoke() ?: false
+            }
+
             buttonViews.add(itemView)
             addView(itemView)
         }
 
         isExpanded = false
+    }
+
+    /**
+     * Buton arkaplan StateListDrawable nesnesini oluşturur ve görünüme uygular.
+     * Generates and applies the custom StateListDrawable background to the button view.
+     */
+    private fun applyButtonBackground(
+        view: View,
+        isCircular: Boolean,
+        customBackgroundDrawable: Drawable?,
+        selectedCustomDrawable: Drawable?,
+        selectedCustomColor: Int?,
+        showUnselectedBg: Boolean,
+        unselectedCustomColor: Int?
+    ) {
+        if (customBackgroundDrawable != null) {
+            view.background = customBackgroundDrawable
+            return
+        }
+
+        // Özel bir renk veya arkaplan atanmamışsa standart state drawable'ını koru
+        if (selectedCustomDrawable == null && selectedCustomColor == null && !showUnselectedBg) {
+            val standardRes = if (isCircular) R.drawable.state_segmented_circular_button else R.drawable.state_segmented_button
+            view.background = ContextCompat.getDrawable(context, standardRes)
+            return
+        }
+
+        val cornerRadius = context.resources.getDimension(
+            if (isCircular) R.dimen.sb_circular_button_size else R.dimen.sb_button_radius
+        )
+        val disabledColor = ContextCompat.getColor(context, R.color.sb_button_disabled)
+        val defaultSelectedColor = ContextCompat.getColor(context, R.color.sb_button_selected)
+
+        val stateList = StateListDrawable()
+
+        // 1. Devre dışı durumu (Disabled state)
+        val disabledDrawable = GradientDrawable().apply {
+            if (isCircular) shape = GradientDrawable.OVAL else {
+                shape = GradientDrawable.RECTANGLE
+                this.cornerRadius = cornerRadius
+            }
+            setColor(disabledColor)
+        }
+        stateList.addState(intArrayOf(-android.R.attr.state_enabled), disabledDrawable)
+
+        // 2. Seçili ve Aktif durumu (Selected & Activated state)
+        val selectedStateDrawable: Drawable = when {
+            selectedCustomDrawable != null -> selectedCustomDrawable.constantState?.newDrawable()?.mutate() ?: selectedCustomDrawable
+            selectedCustomColor != null -> GradientDrawable().apply {
+                if (isCircular) shape = GradientDrawable.OVAL else {
+                    shape = GradientDrawable.RECTANGLE
+                    this.cornerRadius = cornerRadius
+                }
+                setColor(selectedCustomColor)
+            }
+            else -> GradientDrawable().apply {
+                if (isCircular) shape = GradientDrawable.OVAL else {
+                    shape = GradientDrawable.RECTANGLE
+                    this.cornerRadius = cornerRadius
+                }
+                setColor(defaultSelectedColor)
+            }
+        }
+        stateList.addState(intArrayOf(android.R.attr.state_selected), selectedStateDrawable)
+        stateList.addState(intArrayOf(android.R.attr.state_activated), selectedStateDrawable.constantState?.newDrawable()?.mutate() ?: selectedStateDrawable)
+
+        // 3. Seçilmemiş durumu (Unselected state)
+        val unselectedStateDrawable: Drawable = if (showUnselectedBg && unselectedCustomColor != null) {
+            GradientDrawable().apply {
+                if (isCircular) shape = GradientDrawable.OVAL else {
+                    shape = GradientDrawable.RECTANGLE
+                    this.cornerRadius = cornerRadius
+                }
+                setColor(unselectedCustomColor)
+            }
+        } else {
+            ColorDrawable(Color.TRANSPARENT)
+        }
+        stateList.addState(intArrayOf(), unselectedStateDrawable)
+
+        view.background = stateList
     }
 
     private fun getButtonStyle(ta: TypedArray, index: Int): Int {
@@ -592,6 +831,66 @@ class SegmentedButtonBar @JvmOverloads constructor(
             3 -> ta.getColorStateList(R.styleable.SegmentedButtonBar_sbButton4IconTint)
             4 -> ta.getColorStateList(R.styleable.SegmentedButtonBar_sbButton5IconTint)
             5 -> ta.getColorStateList(R.styleable.SegmentedButtonBar_sbButton6IconTint)
+            else -> null
+        }
+    }
+
+    private fun getButtonBackgroundAttributes(ta: TypedArray, index: Int): Triple<Drawable?, Drawable?, Int?> {
+        return when (index) {
+            0 -> Triple(
+                ta.getDrawable(R.styleable.SegmentedButtonBar_sbButton1Background),
+                ta.getDrawable(R.styleable.SegmentedButtonBar_sbButton1SelectedBackground),
+                if (ta.hasValue(R.styleable.SegmentedButtonBar_sbButton1SelectedColor)) ta.getColor(R.styleable.SegmentedButtonBar_sbButton1SelectedColor, Color.WHITE) else null
+            )
+            1 -> Triple(
+                ta.getDrawable(R.styleable.SegmentedButtonBar_sbButton2Background),
+                ta.getDrawable(R.styleable.SegmentedButtonBar_sbButton2SelectedBackground),
+                if (ta.hasValue(R.styleable.SegmentedButtonBar_sbButton2SelectedColor)) ta.getColor(R.styleable.SegmentedButtonBar_sbButton2SelectedColor, Color.WHITE) else null
+            )
+            2 -> Triple(
+                ta.getDrawable(R.styleable.SegmentedButtonBar_sbButton3Background),
+                ta.getDrawable(R.styleable.SegmentedButtonBar_sbButton3SelectedBackground),
+                if (ta.hasValue(R.styleable.SegmentedButtonBar_sbButton3SelectedColor)) ta.getColor(R.styleable.SegmentedButtonBar_sbButton3SelectedColor, Color.WHITE) else null
+            )
+            3 -> Triple(
+                ta.getDrawable(R.styleable.SegmentedButtonBar_sbButton4Background),
+                ta.getDrawable(R.styleable.SegmentedButtonBar_sbButton4SelectedBackground),
+                if (ta.hasValue(R.styleable.SegmentedButtonBar_sbButton4SelectedColor)) ta.getColor(R.styleable.SegmentedButtonBar_sbButton4SelectedColor, Color.WHITE) else null
+            )
+            4 -> Triple(
+                ta.getDrawable(R.styleable.SegmentedButtonBar_sbButton5Background),
+                ta.getDrawable(R.styleable.SegmentedButtonBar_sbButton5SelectedBackground),
+                if (ta.hasValue(R.styleable.SegmentedButtonBar_sbButton5SelectedColor)) ta.getColor(R.styleable.SegmentedButtonBar_sbButton5SelectedColor, Color.WHITE) else null
+            )
+            5 -> Triple(
+                ta.getDrawable(R.styleable.SegmentedButtonBar_sbButton6Background),
+                ta.getDrawable(R.styleable.SegmentedButtonBar_sbButton6SelectedBackground),
+                if (ta.hasValue(R.styleable.SegmentedButtonBar_sbButton6SelectedColor)) ta.getColor(R.styleable.SegmentedButtonBar_sbButton6SelectedColor, Color.WHITE) else null
+            )
+            else -> Triple(null, null, null)
+        }
+    }
+
+    private fun getButtonContentDescriptionAttr(ta: TypedArray, index: Int): String? {
+        return when (index) {
+            0 -> ta.getString(R.styleable.SegmentedButtonBar_sbButton1ContentDescription)
+            1 -> ta.getString(R.styleable.SegmentedButtonBar_sbButton2ContentDescription)
+            2 -> ta.getString(R.styleable.SegmentedButtonBar_sbButton3ContentDescription)
+            3 -> ta.getString(R.styleable.SegmentedButtonBar_sbButton4ContentDescription)
+            4 -> ta.getString(R.styleable.SegmentedButtonBar_sbButton5ContentDescription)
+            5 -> ta.getString(R.styleable.SegmentedButtonBar_sbButton6ContentDescription)
+            else -> null
+        }
+    }
+
+    private fun getButtonTooltipAttr(ta: TypedArray, index: Int): String? {
+        return when (index) {
+            0 -> ta.getString(R.styleable.SegmentedButtonBar_sbButton1Tooltip)
+            1 -> ta.getString(R.styleable.SegmentedButtonBar_sbButton2Tooltip)
+            2 -> ta.getString(R.styleable.SegmentedButtonBar_sbButton3Tooltip)
+            3 -> ta.getString(R.styleable.SegmentedButtonBar_sbButton4Tooltip)
+            4 -> ta.getString(R.styleable.SegmentedButtonBar_sbButton5Tooltip)
+            5 -> ta.getString(R.styleable.SegmentedButtonBar_sbButton6Tooltip)
             else -> null
         }
     }
@@ -689,10 +988,6 @@ class SegmentedButtonBar @JvmOverloads constructor(
     // Public API — Expandable Animation
     // ==========================================
 
-    /**
-     * Expandable çubuğu genişletir.
-     * Expands the expandable button bar.
-     */
     fun expand(animate: Boolean = true) {
         if (currentStyle != STYLE_EXPANDABLE || isExpanded || isAnimating) return
 
@@ -735,10 +1030,6 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
     }
 
-    /**
-     * Expandable çubuğu kapatır (daraltır).
-     * Collapses the expandable button bar.
-     */
     fun collapse(animate: Boolean = true) {
         if (currentStyle != STYLE_EXPANDABLE || !isExpanded || isAnimating) return
 
@@ -778,24 +1069,12 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
     }
 
-    /**
-     * Expandable çubuğun genişleme durumunu tersine çevirir.
-     * Toggles expansion state of the expandable bar.
-     */
     fun toggleExpand(animate: Boolean = true) {
         if (isExpanded) collapse(animate) else expand(animate)
     }
 
-    /**
-     * Expandable çubuğun açık olup olmadığını döner.
-     * Returns whether the expandable bar is expanded.
-     */
     fun isExpanded(): Boolean = isExpanded
 
-    /**
-     * Expandable çubuğun açılma/kapanma durum değişikliği dinleyicisini atar.
-     * Sets expansion change listener.
-     */
     fun setOnExpandChangeListener(listener: (Boolean) -> Unit) {
         onExpandChangeListener = listener
     }
@@ -805,20 +1084,23 @@ class SegmentedButtonBar @JvmOverloads constructor(
     // ==========================================
 
     /**
-     * Belirtilen indisteki butonu tekil olarak seçili yapar (0 tabanlı).
-     * Selects the button at the specified index (0-based) exclusively.
+     * Belirtilen butonu seçer, diğer tüm butonların seçimini ve aktifliğini kaldırır.
+     * Selects the button at index, clears selection and activation from all other buttons.
      */
     fun selectButton(index: Int) {
         if (index !in buttonViews.indices) return
         selectedIndex = index
         buttonViews.forEachIndexed { i, view ->
-            view.isSelected = (i == index)
+            val isTarget = (i == index)
+            view.isSelected = isTarget
+            if (!isTarget && view.isActivated) {
+                view.isActivated = false
+            }
         }
     }
 
     /**
      * Tüm butonların seçimini kaldırır.
-     * Clears selection from all buttons.
      */
     fun clearSelection() {
         selectedIndex = -1
@@ -827,7 +1109,6 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
     /**
      * Tüm butonların aktiflik durumunu tek bir çağrıyla ayarlar.
-     * Sets the activation state of all buttons in a single call.
      */
     fun setAllActivated(activated: Boolean) {
         buttonViews.forEach { it.isActivated = activated }
@@ -835,7 +1116,6 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
     /**
      * Belirtilen butonu tekil olarak aktif (isActivated) yapar, diğerlerini pasife çeker.
-     * Activates the specified button exclusively and deactivates the rest.
      */
     fun activateButton(index: Int) {
         buttonViews.forEachIndexed { i, view ->
@@ -843,16 +1123,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
     }
 
-    /**
-     * Seçili butonun indisini döner (hiçbiri seçili değilse -1).
-     * Returns the index of the currently selected button (-1 if none).
-     */
     fun getSelectedButtonIndex(): Int = selectedIndex
 
-    /**
-     * Belirtilen butonun seçim durumunu ayarlar.
-     * Sets the selection state of a specific button.
-     */
     fun setButtonSelected(index: Int, selected: Boolean) {
         buttonViews.getOrNull(index)?.isSelected = selected
         if (selected) {
@@ -862,70 +1134,111 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
     }
 
-    /**
-     * Belirtilen butonun seçili olup olmadığını döner.
-     * Returns whether the button at the given index is selected.
-     */
     fun isButtonSelected(index: Int): Boolean = buttonViews.getOrNull(index)?.isSelected ?: false
 
-    /**
-     * Belirtilen butonun kilit/aktiflik (isActivated) durumunu ayarlar.
-     * Sets the activation (isActivated) state of a specific button.
-     */
     fun setButtonActivated(index: Int, activated: Boolean) {
         buttonViews.getOrNull(index)?.isActivated = activated
     }
 
-    /**
-     * Belirtilen butonun aktiflik durumunu döner.
-     * Returns whether the button at the given index is activated.
-     */
     fun isButtonActivated(index: Int): Boolean = buttonViews.getOrNull(index)?.isActivated ?: false
 
-    /**
-     * Belirtilen butonun etkin/devre dışı (isEnabled) durumunu ayarlar.
-     * Sets the enabled state of a specific button.
-     */
     fun setButtonEnabled(index: Int, enabled: Boolean) {
         buttonViews.getOrNull(index)?.isEnabled = enabled
     }
 
-    /**
-     * Belirtilen butonun etkin olup olmadığını döner.
-     * Returns whether the button at the given index is enabled.
-     */
     fun isButtonEnabled(index: Int): Boolean = buttonViews.getOrNull(index)?.isEnabled ?: false
 
-    /**
-     * Mevcut stili döner.
-     * Returns the current button bar style.
-     */
     fun getStyle(): Int = currentStyle
 
-    /**
-     * Pill butonunun kilit (aktiflik) durumunu ayarlar.
-     * Sets the activation (lock/unlock) state of the pill button.
-     */
     fun setPillActivated(active: Boolean) {
         setButtonActivated(0, active)
     }
 
-    /**
-     * Pill butonunun aktiflik durumunu döner.
-     * Returns whether the pill button is activated.
-     */
-    fun isPillActivated(): Boolean {
-        return isButtonActivated(0)
+    fun isPillActivated(): Boolean = isButtonActivated(0)
+
+    // ==========================================
+    // Public API — Custom Backgrounds & Colors
+    // ==========================================
+
+    fun setSelectedBackground(drawable: Drawable?) {
+        globalSelectedBackground = drawable
+        buttonViews.forEachIndexed { i, view ->
+            val isCircular = (getButtonStyle(context.obtainStyledAttributes(intArrayOf()), i) == BUTTON_STYLE_CIRCULAR)
+            applyButtonBackground(
+                view,
+                isCircular = isCircular,
+                customBackgroundDrawable = null,
+                selectedCustomDrawable = drawable,
+                selectedCustomColor = globalSelectedColor,
+                showUnselectedBg = showUnselectedBackground,
+                unselectedCustomColor = unselectedButtonColor
+            )
+        }
+    }
+
+    fun setSelectedColor(@ColorInt color: Int) {
+        globalSelectedColor = color
+        buttonViews.forEachIndexed { i, view ->
+            val isCircular = (currentStyle == STYLE_CIRCULAR)
+            applyButtonBackground(
+                view,
+                isCircular = isCircular,
+                customBackgroundDrawable = null,
+                selectedCustomDrawable = null,
+                selectedCustomColor = color,
+                showUnselectedBg = showUnselectedBackground,
+                unselectedCustomColor = unselectedButtonColor
+            )
+        }
+    }
+
+    fun setButtonSelectedBackground(index: Int, drawable: Drawable?) {
+        val view = buttonViews.getOrNull(index) ?: return
+        applyButtonBackground(
+            view,
+            isCircular = (currentStyle == STYLE_CIRCULAR),
+            customBackgroundDrawable = null,
+            selectedCustomDrawable = drawable,
+            selectedCustomColor = null,
+            showUnselectedBg = showUnselectedBackground,
+            unselectedCustomColor = unselectedButtonColor
+        )
+    }
+
+    fun setButtonSelectedColor(index: Int, @ColorInt color: Int) {
+        val view = buttonViews.getOrNull(index) ?: return
+        applyButtonBackground(
+            view,
+            isCircular = (currentStyle == STYLE_CIRCULAR),
+            customBackgroundDrawable = null,
+            selectedCustomDrawable = null,
+            selectedCustomColor = color,
+            showUnselectedBg = showUnselectedBackground,
+            unselectedCustomColor = unselectedButtonColor
+        )
+    }
+
+    fun setButtonBackground(index: Int, drawable: Drawable?) {
+        buttonViews.getOrNull(index)?.background = drawable
+    }
+
+    fun setBarBackground(drawable: Drawable?) {
+        background = drawable
+    }
+
+    fun setBarBackgroundColor(@ColorInt color: Int) {
+        val cornerRadius = context.resources.getDimension(R.dimen.sb_bar_radius)
+        val shape = GradientDrawable().apply {
+            this.cornerRadius = cornerRadius
+            setColor(color)
+        }
+        background = shape
     }
 
     // ==========================================
     // Public API — Icon Tint Management
     // ==========================================
 
-    /**
-     * Çubuktaki tüm ikonların renk tonunu genel olarak ayarlar.
-     * Sets icon tint globally for all buttons in the bar.
-     */
     fun setIconTint(tintList: ColorStateList?) {
         globalIconTint = tintList
         buttonViews.forEach { button ->
@@ -937,18 +1250,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
     }
 
-    /**
-     * Çubuktaki tüm ikonların renk tonunu ColorInt değeriyle ayarlar.
-     * Sets icon tint globally for all buttons using a ColorInt.
-     */
     fun setIconTint(@ColorInt color: Int) {
         setIconTint(ColorStateList.valueOf(color))
     }
 
-    /**
-     * Belirli bir butonun ikon renk tonunu ayarlar.
-     * Sets icon tint for a specific button.
-     */
     fun setButtonIconTint(index: Int, tintList: ColorStateList?) {
         val button = buttonViews.getOrNull(index) ?: return
         val iconView = button.findViewById<ImageView>(R.id.sb_item_icon)
@@ -958,22 +1263,43 @@ class SegmentedButtonBar @JvmOverloads constructor(
         iconView?.let { ImageViewCompat.setImageTintList(it, tintList) }
     }
 
-    /**
-     * Belirli bir butonun ikon renk tonunu ColorInt değeriyle ayarlar.
-     * Sets icon tint for a specific button using a ColorInt.
-     */
     fun setButtonIconTint(index: Int, @ColorInt color: Int) {
         setButtonIconTint(index, ColorStateList.valueOf(color))
+    }
+
+    // ==========================================
+    // Public API — Tooltip & Accessibility
+    // ==========================================
+
+    fun setButtonContentDescription(index: Int, contentDescription: CharSequence?) {
+        buttonViews.getOrNull(index)?.contentDescription = contentDescription
+    }
+
+    fun setButtonContentDescription(index: Int, @StringRes resId: Int) {
+        setButtonContentDescription(index, context.getString(resId))
+    }
+
+    fun getButtonContentDescription(index: Int): CharSequence? {
+        return buttonViews.getOrNull(index)?.contentDescription
+    }
+
+    fun setButtonTooltip(index: Int, tooltipText: CharSequence?) {
+        val button = buttonViews.getOrNull(index) ?: return
+        TooltipCompat.setTooltipText(button, tooltipText)
+    }
+
+    fun setButtonTooltip(index: Int, @StringRes resId: Int) {
+        setButtonTooltip(index, context.getString(resId))
+    }
+
+    fun setOnButtonLongClick(index: Int, listener: () -> Boolean) {
+        buttonLongClickListeners[index] = listener
     }
 
     // ==========================================
     // Public API — Click Listeners & Helpers
     // ==========================================
 
-    /**
-     * Belirtilen buton için tıklama dinleyicisi atar.
-     * Sets a click listener for the specified button index.
-     */
     fun setOnButtonClick(index: Int, listener: () -> Unit) {
         buttonClickListeners[index] = listener
     }
@@ -984,6 +1310,13 @@ class SegmentedButtonBar @JvmOverloads constructor(
     fun setOnButton4Click(listener: () -> Unit) = setOnButtonClick(3, listener)
     fun setOnButton5Click(listener: () -> Unit) = setOnButtonClick(4, listener)
     fun setOnButton6Click(listener: () -> Unit) = setOnButtonClick(5, listener)
+
+    fun setOnButton1LongClick(listener: () -> Boolean) = setOnButtonLongClick(0, listener)
+    fun setOnButton2LongClick(listener: () -> Boolean) = setOnButtonLongClick(1, listener)
+    fun setOnButton3LongClick(listener: () -> Boolean) = setOnButtonLongClick(2, listener)
+    fun setOnButton4LongClick(listener: () -> Boolean) = setOnButtonLongClick(3, listener)
+    fun setOnButton5LongClick(listener: () -> Boolean) = setOnButtonLongClick(4, listener)
+    fun setOnButton6LongClick(listener: () -> Boolean) = setOnButtonLongClick(5, listener)
 
     fun setOnPillClick(listener: () -> Unit) {
         pillClickListener = listener
@@ -1016,22 +1349,24 @@ class SegmentedButtonBar @JvmOverloads constructor(
     fun setButton5IconTint(@ColorInt color: Int) = setButtonIconTint(4, color)
     fun setButton6IconTint(@ColorInt color: Int) = setButtonIconTint(5, color)
 
-    /**
-     * Çubuk içindeki buton görünümünü döner.
-     * Returns the button view at the given index.
-     */
+    fun setButton1Tooltip(text: CharSequence?) = setButtonTooltip(0, text)
+    fun setButton2Tooltip(text: CharSequence?) = setButtonTooltip(1, text)
+    fun setButton3Tooltip(text: CharSequence?) = setButtonTooltip(2, text)
+    fun setButton4Tooltip(text: CharSequence?) = setButtonTooltip(3, text)
+    fun setButton5Tooltip(text: CharSequence?) = setButtonTooltip(4, text)
+    fun setButton6Tooltip(text: CharSequence?) = setButtonTooltip(5, text)
+
+    fun setButton1ContentDescription(text: CharSequence?) = setButtonContentDescription(0, text)
+    fun setButton2ContentDescription(text: CharSequence?) = setButtonContentDescription(1, text)
+    fun setButton3ContentDescription(text: CharSequence?) = setButtonContentDescription(2, text)
+    fun setButton4ContentDescription(text: CharSequence?) = setButtonContentDescription(3, text)
+    fun setButton5ContentDescription(text: CharSequence?) = setButtonContentDescription(4, text)
+    fun setButton6ContentDescription(text: CharSequence?) = setButtonContentDescription(5, text)
+
     fun getButton(index: Int): View? = buttonViews.getOrNull(index)
 
-    /**
-     * Çubuktaki toplam buton sayısını döner.
-     * Returns total button count in the bar.
-     */
     fun getButtonCount(): Int = buttonViews.size
 
-    /**
-     * Buton metnini dinamik olarak günceller ve ortalama/hizalamayı yeniden düzenler.
-     * Updates button text dynamically and reconfigures centering/alignment.
-     */
     fun setButtonText(index: Int, text: CharSequence?) {
         val button = buttonViews.getOrNull(index) ?: return
         val textView = button.findViewById<TextView>(R.id.sb_item_text)
@@ -1062,10 +1397,6 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
     }
 
-    /**
-     * Buton ikonunu dinamik olarak günceller ve ikonsuzluk durumunda metni otomatik ortalar.
-     * Updates button icon dynamically and automatically centers text when icon is absent (iconRes = 0).
-     */
     fun setButtonIcon(index: Int, @DrawableRes iconRes: Int) {
         val button = buttonViews.getOrNull(index) ?: return
         val iconView = button.findViewById<ImageView>(R.id.sb_item_icon)

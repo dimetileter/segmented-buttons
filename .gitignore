@@ -17,6 +17,10 @@ local.properties
 .DS_Store
 Thumbs.db
 
+# AI & Internal Documentation
+ai/
+.gemini/
+
 # Android build outputs & binaries
 captures/
 .externalNativeBuild/
