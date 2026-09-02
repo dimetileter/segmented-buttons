@@ -63,10 +63,11 @@
         <attr name="sbShowUnselectedBackground" format="boolean" />
         <attr name="sbUnselectedButtonColor" format="color|reference" />
 
-        <!-- Custom Backgrounds, Colors and Gradients / Özel Arkaplan, Renk ve Gradyan Atamaları -->
+        <!-- Custom Backgrounds, Colors, Gradients and Ripple / Özel Arkaplan, Renk, Gradyan ve Dalgalanma Tonu -->
         <attr name="sbSelectedBackground" format="reference" />
         <attr name="sbSelectedColor" format="color|reference" />
         <attr name="sbBarBackground" format="reference|color" />
+        <attr name="sbRippleColor" format="color|reference" />
 
         <!-- Tooltip and Accessibility / Uzun Basma İpucu ve Erişilebilirlik -->
         <attr name="sbAutoTooltip" format="boolean" />

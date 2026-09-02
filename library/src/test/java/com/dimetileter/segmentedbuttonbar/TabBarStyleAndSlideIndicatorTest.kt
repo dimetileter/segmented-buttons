@@ -148,11 +148,12 @@ class TabBarStyleAndSlideIndicatorTest {
     }
 
     /**
-     * setupWithFragments çağrısının Fragment işlemlerini doğru yönettiğini test eder.
-     * Tests Fragment binding and transactions with setupWithFragments.
+     * setupWithFragments çağrısının Fragment işlemlerini doğru yönettiğini ve
+     * kullanıcının setOnTabSelectedListener ve addOnTabSelectedListener çağrılarını ezmediğini test eder.
+     * Tests that setupWithFragments handles Fragment transactions AND co-exists with user listeners without overriding.
      */
     @Test
-    fun verifySetupWithFragments() {
+    fun verifySetupWithFragmentsCoexistsWithUserListeners() {
         val activity = Robolectric.buildActivity(TestActivity::class.java).setup().get()
         val container = FrameLayout(activity).apply { id = View.generateViewId() }
         activity.setContentView(container)
@@ -167,14 +168,42 @@ class TabBarStyleAndSlideIndicatorTest {
             fragments = listOf(fragment1, fragment2)
         )
 
+        var userCallbackReceived: Int? = null
+        var addCallbackReceived: Int? = null
+
+        // Kullanıcı kendi listener'ını ekler
+        bar.setOnTabSelectedListener { pos ->
+            userCallbackReceived = pos
+        }
+        bar.addOnTabSelectedListener { pos ->
+            addCallbackReceived = pos
+        }
+
         // Başlangıçta 1. fragment eklenmiş olmalı
         activity.supportFragmentManager.executePendingTransactions()
         assertThat(activity.supportFragmentManager.findFragmentById(container.id)).isEqualTo(fragment1)
 
-        // 2. sekmeye geçildiğinde 2. fragment eklenmeli
+        // 2. sekmeye geçildiğinde HEM fragment değişmeli HEM DE kullanıcı dinleyicileri tetiklenmeli
         bar.selectButton(1)
         activity.supportFragmentManager.executePendingTransactions()
+
         assertThat(activity.supportFragmentManager.findFragmentById(container.id)).isEqualTo(fragment2)
+        assertThat(userCallbackReceived).isEqualTo(1)
+        assertThat(addCallbackReceived).isEqualTo(1)
+    }
+
+    /**
+     * Butonların foreground nesnesinin maskeli RippleDrawable ve clipToOutline=true içerdiğini test eder.
+     * Tests that button items have a masked RippleDrawable foreground and clipToOutline=true.
+     */
+    @Test
+    fun verifyButtonRippleAndClipToOutline() {
+        val bar = SegmentedButtonBar(context)
+        val btn0 = bar.getButton(0)!!
+
+        assertThat(btn0.clipToOutline).isTrue()
+        assertThat(btn0.outlineProvider).isNotNull()
+        assertThat(btn0.foreground).isInstanceOf(android.graphics.drawable.RippleDrawable::class.java)
     }
 
     /**

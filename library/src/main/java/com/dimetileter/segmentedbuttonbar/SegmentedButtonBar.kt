@@ -12,8 +12,10 @@ import android.graphics.Outline
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.RippleDrawable
 import android.graphics.drawable.StateListDrawable
 import android.util.AttributeSet
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -121,6 +123,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
     private var globalSelectedColor: Int? = null
     private var showUnselectedBackground: Boolean = false
     private var unselectedButtonColor: Int? = null
+    private var globalRippleColor: Int? = null
 
     // Kayan Gösterge (Sliding Indicator) Çizim Durumları
     private var indicatorLeft: Float = 0f
@@ -132,7 +135,9 @@ class SegmentedButtonBar @JvmOverloads constructor(
     private var isExpanded: Boolean = false
     private var isAnimating: Boolean = false
     private var onExpandChangeListener: ((Boolean) -> Unit)? = null
-    private var onTabSelectedListener: ((Int) -> Unit)? = null
+    private var internalFragmentTabListener: ((Int) -> Unit)? = null
+    private var userTabSelectedListener: ((Int) -> Unit)? = null
+    private val customTabSelectedListeners = mutableListOf<(Int) -> Unit>()
 
     private val buttonViews = mutableListOf<View>()
     private val buttonMetaList = mutableListOf<ButtonMeta>()
@@ -194,6 +199,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
             unselectedButtonColor = ta.getColor(R.styleable.SegmentedButtonBar_sbUnselectedButtonColor, Color.TRANSPARENT)
         }
 
+        if (ta.hasValue(R.styleable.SegmentedButtonBar_sbRippleColor)) {
+            globalRippleColor = ta.getColor(R.styleable.SegmentedButtonBar_sbRippleColor, 0)
+        }
+
         val customBarBg = ta.getDrawable(R.styleable.SegmentedButtonBar_sbBarBackground)
         if (customBarBg != null) {
             background = customBarBg
@@ -224,8 +233,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
      * Configures native TabBar semantics for Android OS and TalkBack accessibility services.
      */
     private fun setupAccessibilitySemantics() {
-        if (currentStyle == STYLE_TAB) {
-            ViewCompat.setAccessibilityDelegate(this, object : AccessibilityDelegateCompat() {
+        if (isInEditMode || currentStyle != STYLE_TAB) return
+        ViewCompat.setAccessibilityDelegate(this, object : AccessibilityDelegateCompat() {
                 override fun onInitializeAccessibilityNodeInfo(host: View, info: AccessibilityNodeInfoCompat) {
                     super.onInitializeAccessibilityNodeInfo(host, info)
                     info.className = "android.widget.TabWidget"
@@ -262,7 +271,6 @@ class SegmentedButtonBar @JvmOverloads constructor(
                     }
                 })
             }
-        }
     }
 
     /**
@@ -328,16 +336,14 @@ class SegmentedButtonBar @JvmOverloads constructor(
                         shape = GradientDrawable.OVAL
                         setColor(Color.TRANSPARENT)
                     }
-                    applyButtonOutline(itemView, isCircular = true)
+                    applyButtonRipple(itemView, isCircular = true)
                 }
 
                 val finalCd = customCd ?: textVal ?: getDefaultContentDescription(i)
                 itemView.contentDescription = finalCd
 
                 val tooltipText = customTooltip ?: textVal ?: customCd
-                if (autoTooltip && !tooltipText.isNullOrEmpty()) {
-                    TooltipCompat.setTooltipText(itemView, tooltipText)
-                }
+                applyTooltip(itemView, tooltipText)
 
                 val params = LayoutParams(circularHybridSize, circularHybridSize).apply {
                     if (i > 0) {
@@ -392,7 +398,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
                         this.cornerRadius = cornerRadius
                         setColor(Color.TRANSPARENT)
                     }
-                    applyButtonOutline(itemView, isCircular = false)
+                    applyButtonRipple(itemView, isCircular = false)
                 }
 
                 val hasIcon = (iconRes != 0)
@@ -433,9 +439,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 itemView.contentDescription = finalCd
 
                 val tooltipText = customTooltip ?: textVal ?: customCd
-                if (autoTooltip && !tooltipText.isNullOrEmpty()) {
-                    TooltipCompat.setTooltipText(itemView, tooltipText)
-                }
+                applyTooltip(itemView, tooltipText)
 
                 val params = LayoutParams(0, buttonHeight, 1f).apply {
                     if (i > 0) {
@@ -562,9 +566,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
             itemView.contentDescription = finalCd
 
             val tooltipText = customTooltip ?: textVal ?: customCd
-            if (autoTooltip && !tooltipText.isNullOrEmpty()) {
-                TooltipCompat.setTooltipText(itemView, tooltipText)
-            }
+            applyTooltip(itemView, tooltipText)
 
             val params = LayoutParams(buttonWidth, buttonHeight).apply {
                 if (i > 0) {
@@ -650,9 +652,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
         circularView.contentDescription = finalCd
 
         val tooltipText = customTooltip ?: customText ?: customCd
-        if (autoTooltip && !tooltipText.isNullOrEmpty()) {
-            TooltipCompat.setTooltipText(circularView, tooltipText)
-        }
+        applyTooltip(circularView, tooltipText)
 
         circularView.layoutParams = LayoutParams(circularSize, circularSize)
         circularView.isSelected = explicitSelected ?: false
@@ -741,9 +741,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
 
         val tooltipText = customTooltip ?: customText ?: customCd
-        if (autoTooltip && !tooltipText.isNullOrEmpty()) {
-            TooltipCompat.setTooltipText(pillView, tooltipText)
-        }
+        applyTooltip(pillView, tooltipText)
 
         pillView.layoutParams = LayoutParams(minWidth, buttonHeight)
         pillView.isSelected = explicitSelected ?: false
@@ -823,9 +821,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
             itemView.contentDescription = finalCd
 
             val tooltipText = customTooltip ?: textVal ?: customCd
-            if (autoTooltip && !tooltipText.isNullOrEmpty()) {
-                TooltipCompat.setTooltipText(itemView, tooltipText)
-            }
+            applyTooltip(itemView, tooltipText)
 
             val params = LayoutParams(circularSize, circularSize).apply {
                 if (i > 0) {
@@ -888,9 +884,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
         anchorView.contentDescription = finalCd
 
         val tooltipText = meta.tooltip ?: meta.text ?: meta.contentDescription
-        if (autoTooltip && !tooltipText.isNullOrEmpty()) {
-            TooltipCompat.setTooltipText(anchorView, tooltipText)
-        }
+        applyTooltip(anchorView, tooltipText)
 
         applyButtonBackground(
             anchorView,
@@ -905,21 +899,63 @@ class SegmentedButtonBar @JvmOverloads constructor(
     }
 
     /**
+     * Buton ipucu (Tooltip) metnini güvenli bir şekilde atar. Android Studio önizlemesinde çökmeyi engeller.
+     * Applies tooltip text safely, preventing any Layoutlib preview crashes in Android Studio.
+     */
+    private fun applyTooltip(view: View, tooltipText: CharSequence?) {
+        if (isInEditMode || !autoTooltip || tooltipText.isNullOrEmpty()) return
+        TooltipCompat.setTooltipText(view, tooltipText)
+    }
+
+    /**
      * Butonun tıklama, dokunma ve dalgalanma (ripple) alanlarını tam 54dp yuvarlak köşelere göre kırpar.
      * Clips the button touch, focus, and ripple areas to match exact rounded corners.
      */
     private fun applyButtonOutline(view: View, isCircular: Boolean) {
+        if (isInEditMode) return
+        val radius = context.resources.getDimension(
+            if (isCircular) R.dimen.sb_circular_button_size else R.dimen.sb_button_radius
+        )
         view.outlineProvider = object : ViewOutlineProvider() {
             override fun getOutline(v: View, outline: Outline) {
                 if (isCircular) {
                     outline.setOval(0, 0, v.width, v.height)
                 } else {
-                    val radius = context.resources.getDimension(R.dimen.sb_button_radius)
                     outline.setRoundRect(0, 0, v.width, v.height, radius)
                 }
             }
         }
         view.clipToOutline = true
+    }
+
+    /**
+     * Butona maskeli ve yuvarlatılmış RippleDrawable atar. Böylece tıklamalarda hiçbir kare taşma oluşmaz.
+     * Applies a masked rounded RippleDrawable to prevent any rectangular highlight bleed on tap.
+     */
+    private fun applyButtonRipple(view: View, isCircular: Boolean) {
+        applyButtonOutline(view, isCircular)
+        if (isInEditMode) return
+        val radius = context.resources.getDimension(
+            if (isCircular) R.dimen.sb_circular_button_size else R.dimen.sb_button_radius
+        )
+        val maskDrawable = GradientDrawable().apply {
+            shape = if (isCircular) GradientDrawable.OVAL else GradientDrawable.RECTANGLE
+            if (!isCircular) {
+                cornerRadius = radius
+            }
+            setColor(Color.WHITE)
+        }
+
+        val defaultRipple = ContextCompat.getColor(context, R.color.sb_button_ripple_color)
+        val rippleColor = globalRippleColor ?: defaultRipple
+
+        val ripple = RippleDrawable(
+            ColorStateList.valueOf(rippleColor),
+            null,
+            maskDrawable
+        )
+        view.foreground = ripple
+        applyButtonOutline(view, isCircular)
     }
 
     /**
@@ -935,7 +971,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
         showUnselectedBg: Boolean,
         unselectedCustomColor: Int?
     ) {
-        applyButtonOutline(view, isCircular)
+        applyButtonRipple(view, isCircular)
         if (customBackgroundDrawable != null) {
             view.background = customBackgroundDrawable
             return
@@ -1388,8 +1424,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 .commit()
         }
 
-        // Sekme tıklandığında ilgili fragment'ı değiştir
-        setOnTabSelectedListener { position ->
+        // Dahili fragment geçişini internalFragmentTabListener'a ata (Kullanıcı dinleyicisini ezmez!)
+        internalFragmentTabListener = { position ->
             if (position in fragments.indices) {
                 fragmentManager.beginTransaction()
                     .replace(containerId, fragments[position])
@@ -1398,8 +1434,39 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
     }
 
-    fun setOnTabSelectedListener(listener: (position: Int) -> Unit) {
-        onTabSelectedListener = listener
+    /**
+     * Sekme seçimini dinleyen ana kullanıcı geri çağrısını atar.
+     */
+    fun setOnTabSelectedListener(listener: ((position: Int) -> Unit)?) {
+        userTabSelectedListener = listener
+    }
+
+    /**
+     * Sekme seçimini dinleyen ek bir geri çağrı ekler.
+     */
+    fun addOnTabSelectedListener(listener: (position: Int) -> Unit) {
+        customTabSelectedListeners.add(listener)
+    }
+
+    /**
+     * Belirtilen sekme dinleyicisini kaldırır.
+     */
+    fun removeOnTabSelectedListener(listener: (position: Int) -> Unit) {
+        customTabSelectedListeners.remove(listener)
+    }
+
+    /**
+     * Tüm ek sekme dinleyicilerini ve kullanıcı dinleyicisini temizler.
+     */
+    fun clearOnTabSelectedListeners() {
+        customTabSelectedListeners.clear()
+        userTabSelectedListener = null
+    }
+
+    private fun notifyTabSelected(index: Int) {
+        internalFragmentTabListener?.invoke(index)
+        userTabSelectedListener?.invoke(index)
+        customTabSelectedListeners.forEach { it.invoke(index) }
     }
 
     // ==========================================
@@ -1544,7 +1611,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
 
         if (oldIndex != index) {
-            onTabSelectedListener?.invoke(index)
+            notifyTabSelected(index)
         }
     }
 
@@ -1728,6 +1795,20 @@ class SegmentedButtonBar @JvmOverloads constructor(
         setButtonIconTint(index, ColorStateList.valueOf(color))
     }
 
+    /**
+     * Butonların dokunma ve dalgalanma (ripple) rengini dinamik olarak ayarlar.
+     * Sets the touch highlight/ripple color dynamically across all buttons.
+     */
+    fun setRippleColor(@ColorInt color: Int) {
+        globalRippleColor = color
+        buttonViews.forEachIndexed { i, view ->
+            val isCircular = (getButtonStyle(context.obtainStyledAttributes(intArrayOf()), i) == BUTTON_STYLE_CIRCULAR)
+            applyButtonRipple(view, isCircular)
+        }
+    }
+
+    fun getRippleColor(): Int? = globalRippleColor
+
     // ==========================================
     // Public API — Tooltip & Accessibility
     // ==========================================
@@ -1746,7 +1827,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
     fun setButtonTooltip(index: Int, tooltipText: CharSequence?) {
         val button = buttonViews.getOrNull(index) ?: return
-        TooltipCompat.setTooltipText(button, tooltipText)
+        applyTooltip(button, tooltipText)
     }
 
     fun setButtonTooltip(index: Int, @StringRes resId: Int) {

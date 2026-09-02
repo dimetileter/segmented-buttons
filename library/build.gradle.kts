@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.github.dimetileter"
-version = "1.0.5"
+version = "1.0.6"
 
 android {
     namespace = "com.dimetileter.segmentedbuttonbar"
@@ -52,7 +52,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.dimetileter"
                 artifactId = "segmented-button-bar"
-                version = "1.0.5"
+                version = "1.0.6"
             }
         }
     }

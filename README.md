@@ -44,7 +44,7 @@ In your module's `build.gradle.kts` (e.g. `app/build.gradle.kts`):
 
 ```kotlin
 dependencies {
-    implementation("com.github.dimetileter:segmented-buttons:v1.0.5")
+    implementation("com.github.dimetileter:segmented-buttons:v1.0.6")
 }
 ```
 
@@ -271,6 +271,7 @@ segmentedBar.setBarBackgroundColor(Color.parseColor("#222222"))
 | `app:sbSelectedBackground` | `reference` | `@null` | Custom drawable or gradient for selected buttons |
 | `app:sbSelectedColor` | `color` | `@null` | Custom solid color for selected buttons |
 | `app:sbBarBackground` | `reference\|color` | `@null` | Override bar container background |
+| `app:sbRippleColor` | `color` | `#14000000` | Custom touch highlight and ripple feedback color |
 | `app:sbAutoTooltip` | `boolean` | `true` | Automatically show tooltips on button long-press |
 | `app:sbSlideIndicator` | `boolean` | `false` (`true` on `tab`) | Smooth sliding pill indicator animation across tabs |
 | `app:sbIndicatorDuration` | `integer` | `250` (ms) | Duration of the sliding pill animation in milliseconds |
