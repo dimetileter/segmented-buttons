@@ -8,6 +8,7 @@ import android.content.res.ColorStateList
 import android.content.res.TypedArray
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Outline
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
@@ -17,6 +18,7 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup.MarginLayoutParams
+import android.view.ViewOutlineProvider
 import android.view.animation.OvershootInterpolator
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -322,7 +324,11 @@ class SegmentedButtonBar @JvmOverloads constructor(
                         unselectedCustomColor = unselectedButtonColor
                     )
                 } else {
-                    itemView.background = ColorDrawable(Color.TRANSPARENT)
+                    itemView.background = GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        setColor(Color.TRANSPARENT)
+                    }
+                    applyButtonOutline(itemView, isCircular = true)
                 }
 
                 val finalCd = customCd ?: textVal ?: getDefaultContentDescription(i)
@@ -380,7 +386,13 @@ class SegmentedButtonBar @JvmOverloads constructor(
                         unselectedCustomColor = unselectedButtonColor
                     )
                 } else {
-                    itemView.background = ColorDrawable(Color.TRANSPARENT)
+                    val cornerRadius = context.resources.getDimension(R.dimen.sb_button_radius)
+                    itemView.background = GradientDrawable().apply {
+                        shape = GradientDrawable.RECTANGLE
+                        this.cornerRadius = cornerRadius
+                        setColor(Color.TRANSPARENT)
+                    }
+                    applyButtonOutline(itemView, isCircular = false)
                 }
 
                 val hasIcon = (iconRes != 0)
@@ -893,6 +905,24 @@ class SegmentedButtonBar @JvmOverloads constructor(
     }
 
     /**
+     * Butonun tıklama, dokunma ve dalgalanma (ripple) alanlarını tam 54dp yuvarlak köşelere göre kırpar.
+     * Clips the button touch, focus, and ripple areas to match exact rounded corners.
+     */
+    private fun applyButtonOutline(view: View, isCircular: Boolean) {
+        view.outlineProvider = object : ViewOutlineProvider() {
+            override fun getOutline(v: View, outline: Outline) {
+                if (isCircular) {
+                    outline.setOval(0, 0, v.width, v.height)
+                } else {
+                    val radius = context.resources.getDimension(R.dimen.sb_button_radius)
+                    outline.setRoundRect(0, 0, v.width, v.height, radius)
+                }
+            }
+        }
+        view.clipToOutline = true
+    }
+
+    /**
      * Buton arkaplan StateListDrawable nesnesini oluşturur ve görünüme uygular.
      * Generates and applies the custom StateListDrawable background to the button view.
      */
@@ -905,6 +935,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
         showUnselectedBg: Boolean,
         unselectedCustomColor: Int?
     ) {
+        applyButtonOutline(view, isCircular)
         if (customBackgroundDrawable != null) {
             view.background = customBackgroundDrawable
             return
@@ -1199,8 +1230,29 @@ class SegmentedButtonBar @JvmOverloads constructor(
     fun setSlideIndicator(enabled: Boolean) {
         slideIndicator = enabled
         isIndicatorPositionInitialized = false
-        if (enabled) {
-            buttonViews.forEach { it.background = ColorDrawable(Color.TRANSPARENT) }
+        buttonViews.forEachIndexed { i, view ->
+            val isCircular = (getButtonStyle(context.obtainStyledAttributes(intArrayOf()), i) == BUTTON_STYLE_CIRCULAR)
+            if (enabled) {
+                val cornerRadius = context.resources.getDimension(R.dimen.sb_button_radius)
+                view.background = GradientDrawable().apply {
+                    shape = if (isCircular) GradientDrawable.OVAL else GradientDrawable.RECTANGLE
+                    if (!isCircular) {
+                        this.cornerRadius = cornerRadius
+                    }
+                    setColor(Color.TRANSPARENT)
+                }
+            } else {
+                applyButtonBackground(
+                    view,
+                    isCircular = isCircular,
+                    customBackgroundDrawable = null,
+                    selectedCustomDrawable = globalSelectedBackground,
+                    selectedCustomColor = globalSelectedColor,
+                    showUnselectedBg = showUnselectedBackground,
+                    unselectedCustomColor = unselectedButtonColor
+                )
+            }
+            applyButtonOutline(view, isCircular)
         }
         invalidate()
     }

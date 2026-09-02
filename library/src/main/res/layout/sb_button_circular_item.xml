@@ -7,7 +7,7 @@
     android:layout_height="@dimen/sb_circular_button_size"
     android:padding="@dimen/sb_button_padding"
     android:background="@drawable/state_segmented_circular_button"
-    android:foreground="?android:attr/selectableItemBackgroundBorderless"
+    android:foreground="@drawable/ripple_segmented_circular_button"
     android:clipToOutline="true"
     android:clickable="true"
     android:focusable="true">
