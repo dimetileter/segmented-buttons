@@ -6,4 +6,6 @@
     <color name="sb_button_unselected">@android:color/transparent</color>
     <color name="sb_button_disabled">#1AD9D9D9</color>
     <color name="sb_button_text">#C3C3C3</color>
+    <color name="sb_button_icon">#C3C3C3</color>
+    <color name="sb_button_ripple_color">#24FFFFFF</color>
 </resources>

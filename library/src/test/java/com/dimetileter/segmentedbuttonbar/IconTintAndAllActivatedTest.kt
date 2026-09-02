@@ -135,4 +135,23 @@ class IconTintAndAllActivatedTest {
         val bar = SegmentedButtonBar(context, attrs)
         assertThat(bar.getButtonCount()).isEqualTo(5)
     }
+
+    /**
+     * Özel tint atanmadığında ikonların tema renk tonunu (sb_button_icon) aldığını test eder.
+     * Tests default theme-adaptive icon tint when no explicit tint is defined.
+     */
+    @Test
+    fun verifyDefaultThemeAdaptiveIconTint() {
+        val attrs = Robolectric.buildAttributeSet()
+            .addAttribute(R.attr.sbStyle, "horizontal")
+            .addAttribute(R.attr.sbButtonCount, "2")
+            .addAttribute(R.attr.sbButton1Icon, "@drawable/ic_sb_arrow_back")
+            .addAttribute(R.attr.sbButton2Icon, "@drawable/ic_sb_arrow_next")
+            .build()
+
+        val bar = SegmentedButtonBar(context, attrs)
+        val icon1 = bar.getButton(0)?.findViewById<ImageView>(R.id.sb_item_icon)
+        assertThat(icon1).isNotNull()
+        assertThat(ImageViewCompat.getImageTintList(icon1!!)).isNotNull()
+    }
 }

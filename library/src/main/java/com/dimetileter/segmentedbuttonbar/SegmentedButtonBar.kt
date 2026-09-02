@@ -37,6 +37,7 @@ import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import androidx.core.widget.ImageViewCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
+import androidx.interpolator.view.animation.FastOutLinearInInterpolator
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.viewpager2.widget.ViewPager2
 
@@ -83,7 +84,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
         private const val DEFAULT_BUTTON_COUNT = 2
         private const val DEFAULT_VERTICAL_COUNT = 3
         private const val DEFAULT_EXPANDABLE_COUNT = 3
-        private const val ANIMATION_DURATION_MS = 300L
+        private const val EXPAND_ANIMATION_DURATION_MS = 200L
+        private const val COLLAPSE_ANIMATION_DURATION_MS = 100L
         private const val DEFAULT_INDICATOR_DURATION_MS = 250L
     }
 
@@ -319,7 +321,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 val iconView = itemView.findViewById<ImageView>(R.id.sb_circular_icon)
                 val finalIcon = if (iconRes != 0) iconRes else R.drawable.ic_sb_arrow_next
                 iconView.setImageResource(finalIcon)
-                perButtonTint?.let { ImageViewCompat.setImageTintList(iconView, it) }
+                resolveIconTint(perButtonTint)?.let { ImageViewCompat.setImageTintList(iconView, it) }
 
                 if (!slideIndicator) {
                     applyButtonBackground(
@@ -379,7 +381,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 val iconView = itemView.findViewById<ImageView>(R.id.sb_item_icon)
                 val textView = itemView.findViewById<TextView>(R.id.sb_item_text)
 
-                perButtonTint?.let { ImageViewCompat.setImageTintList(iconView, it) }
+                resolveIconTint(perButtonTint)?.let { ImageViewCompat.setImageTintList(iconView, it) }
 
                 if (!slideIndicator) {
                     applyButtonBackground(
@@ -511,8 +513,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
             val iconView = itemView.findViewById<ImageView>(R.id.sb_vertical_icon)
             val textView = itemView.findViewById<TextView>(R.id.sb_vertical_text)
 
-            val perButtonTint = getButtonIconTint(ta, i) ?: globalIconTint
-            perButtonTint?.let { ImageViewCompat.setImageTintList(iconView, it) }
+            val perButtonTint = getButtonIconTint(ta, i)
+            resolveIconTint(perButtonTint)?.let { ImageViewCompat.setImageTintList(iconView, it) }
 
             val (iconRes, textVal) = getButtonAttributes(ta, i)
             val (explicitSelected, explicitActivated, explicitEnabled) = getButtonStateAttributes(ta, i)
@@ -625,8 +627,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
         val circularView = inflater.inflate(R.layout.sb_button_circular_item, this, false)
         val iconView = circularView.findViewById<ImageView>(R.id.sb_circular_icon)
 
-        val perButtonTint = getButtonIconTint(ta, 0) ?: globalIconTint
-        perButtonTint?.let { ImageViewCompat.setImageTintList(iconView, it) }
+        val perButtonTint = getButtonIconTint(ta, 0)
+        resolveIconTint(perButtonTint)?.let { ImageViewCompat.setImageTintList(iconView, it) }
 
         val (customBg, selectedBg, selectedCol) = getButtonBackgroundAttributes(ta, 0)
         applyButtonBackground(
@@ -691,8 +693,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
         val iconView = pillView.findViewById<ImageView>(R.id.sb_pill_icon)
         val textView = pillView.findViewById<TextView>(R.id.sb_pill_text)
 
-        val perButtonTint = getButtonIconTint(ta, 0) ?: globalIconTint
-        perButtonTint?.let { ImageViewCompat.setImageTintList(iconView, it) }
+        val perButtonTint = getButtonIconTint(ta, 0)
+        resolveIconTint(perButtonTint)?.let { ImageViewCompat.setImageTintList(iconView, it) }
 
         val (customBg, selectedBg, selectedCol) = getButtonBackgroundAttributes(ta, 0)
         applyButtonBackground(
@@ -783,8 +785,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
             val itemView = inflater.inflate(R.layout.sb_button_circular_item, this, false)
             val iconView = itemView.findViewById<ImageView>(R.id.sb_circular_icon)
 
-            val perButtonTint = getButtonIconTint(ta, i) ?: globalIconTint
-            perButtonTint?.let { ImageViewCompat.setImageTintList(iconView, it) }
+            val perButtonTint = getButtonIconTint(ta, i)
+            resolveIconTint(perButtonTint)?.let { ImageViewCompat.setImageTintList(iconView, it) }
 
             val (iconRes, textVal) = getButtonAttributes(ta, i)
             val (explicitSelected, explicitActivated, explicitEnabled) = getButtonStateAttributes(ta, i)
@@ -878,7 +880,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
         val finalIcon = if (meta.iconRes != 0) meta.iconRes else R.drawable.ic_sb_arrow_next
         iconView?.setImageResource(finalIcon)
-        meta.iconTint?.let { ImageViewCompat.setImageTintList(iconView, it) }
+        resolveIconTint(meta.iconTint)?.let { ImageViewCompat.setImageTintList(iconView, it) }
 
         val finalCd = meta.contentDescription ?: meta.text ?: getDefaultContentDescription(index)
         anchorView.contentDescription = finalCd
@@ -905,6 +907,16 @@ class SegmentedButtonBar @JvmOverloads constructor(
     private fun applyTooltip(view: View, tooltipText: CharSequence?) {
         if (isInEditMode || !autoTooltip || tooltipText.isNullOrEmpty()) return
         TooltipCompat.setTooltipText(view, tooltipText)
+    }
+
+    /**
+     * İkon renk tonunu belirler. Özel tint atanmamışsa gündüz/gece temasına uyumlu @color/sb_button_icon döndürür.
+     * Resolves icon tint, falling back to day/night adaptive @color/sb_button_icon.
+     */
+    private fun resolveIconTint(perButtonTint: ColorStateList?): ColorStateList? {
+        return perButtonTint
+            ?: globalIconTint
+            ?: ContextCompat.getColorStateList(context, R.color.sb_button_icon)
     }
 
     /**
@@ -1476,9 +1488,26 @@ class SegmentedButtonBar @JvmOverloads constructor(
     fun expand(animate: Boolean = true) {
         if (currentStyle != STYLE_EXPANDABLE || isExpanded || isAnimating) return
 
+        // Seçili olan buton ana buton (0) üzerinde zaten gösterilmektedir.
+        // Bu nedenle açılır menü içerisinde tekrar gösterilip mükerrer buton oluşması engellenir.
+        val targetChildren = mutableListOf<View>()
+        for (i in 1 until buttonViews.size) {
+            val child = buttonViews[i]
+            if (collapseOnSelect && selectedIndex > 0 && i == selectedIndex) {
+                child.visibility = View.GONE
+            } else {
+                targetChildren.add(child)
+            }
+        }
+
+        if (targetChildren.isEmpty()) {
+            isExpanded = true
+            onExpandChangeListener?.invoke(true)
+            return
+        }
+
         if (!animate) {
-            for (i in 1 until buttonViews.size) {
-                val child = buttonViews[i]
+            targetChildren.forEach { child ->
                 child.visibility = View.VISIBLE
                 child.alpha = 1f
                 child.translationX = 0f
@@ -1490,21 +1519,20 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
 
         isAnimating = true
-        for (i in 1 until buttonViews.size) {
-            val child = buttonViews[i]
+        targetChildren.forEachIndexed { animIndex, child ->
             child.visibility = View.VISIBLE
             child.alpha = 0f
-            val startTranslation = if (expandDirection == EXPAND_START) 30f else -30f
+            val startTranslation = if (expandDirection == EXPAND_START) 24f else -24f
             child.translationX = startTranslation
 
-            val delay = ((i - 1) * 30L)
+            val delay = (animIndex * 20L)
             child.animate()
                 .alpha(1f)
                 .translationX(0f)
                 .setStartDelay(delay)
-                .setDuration(ANIMATION_DURATION_MS)
+                .setDuration(EXPAND_ANIMATION_DURATION_MS)
                 .setInterpolator(OvershootInterpolator(1.1f))
-                .setListener(if (i == buttonViews.size - 1) object : AnimatorListenerAdapter() {
+                .setListener(if (animIndex == targetChildren.size - 1) object : AnimatorListenerAdapter() {
                     override fun onAnimationEnd(animation: Animator) {
                         isAnimating = false
                         isExpanded = true
@@ -1518,11 +1546,22 @@ class SegmentedButtonBar @JvmOverloads constructor(
     fun collapse(animate: Boolean = true) {
         if (currentStyle != STYLE_EXPANDABLE || !isExpanded || isAnimating) return
 
+        val activeVisibleChildren = buttonViews.filterIndexed { index, view ->
+            index > 0 && view.visibility == View.VISIBLE
+        }
+
+        if (activeVisibleChildren.isEmpty()) {
+            isExpanded = false
+            onExpandChangeListener?.invoke(false)
+            return
+        }
+
         if (!animate) {
-            for (i in 1 until buttonViews.size) {
-                val child = buttonViews[i]
-                child.visibility = View.GONE
-                child.alpha = 0f
+            buttonViews.forEachIndexed { index, view ->
+                if (index > 0) {
+                    view.visibility = View.GONE
+                    view.alpha = 0f
+                }
             }
             isExpanded = false
             onExpandChangeListener?.invoke(false)
@@ -1531,19 +1570,18 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
 
         isAnimating = true
-        val totalChildren = buttonViews.size - 1
-        for (i in 1 until buttonViews.size) {
-            val child = buttonViews[i]
-            val endTranslation = if (expandDirection == EXPAND_START) 20f else -20f
-
+        activeVisibleChildren.forEachIndexed { animIndex, child ->
+            val endTranslation = if (expandDirection == EXPAND_START) 12f else -12f
             child.animate()
                 .alpha(0f)
                 .translationX(endTranslation)
-                .setDuration(ANIMATION_DURATION_MS / 2)
+                .setStartDelay(0L)
+                .setDuration(COLLAPSE_ANIMATION_DURATION_MS)
+                .setInterpolator(FastOutLinearInInterpolator())
                 .setListener(object : AnimatorListenerAdapter() {
                     override fun onAnimationEnd(animation: Animator) {
                         child.visibility = View.GONE
-                        if (i == totalChildren) {
+                        if (animIndex == activeVisibleChildren.size - 1) {
                             isAnimating = false
                             isExpanded = false
                             onExpandChangeListener?.invoke(false)
@@ -1954,7 +1992,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
             if (iconRes != 0) {
                 it.setImageResource(iconRes)
                 it.visibility = View.VISIBLE
-                globalIconTint?.let { tint -> ImageViewCompat.setImageTintList(it, tint) }
+                resolveIconTint(globalIconTint)?.let { tint -> ImageViewCompat.setImageTintList(it, tint) }
                 textView?.let { tv ->
                     if (tv.visibility == View.VISIBLE) {
                         (tv.layoutParams as? MarginLayoutParams)?.marginStart = buttonGapIconText

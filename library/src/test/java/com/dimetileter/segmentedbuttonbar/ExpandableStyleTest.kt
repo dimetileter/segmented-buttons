@@ -162,5 +162,12 @@ class ExpandableStyleTest {
         val anchorView = bar.getButton(0)
         assertThat(anchorView?.contentDescription?.toString()).isEqualTo("Dollar Action")
         assertThat(anchorView?.isSelected).isTrue()
+
+        // 5. Tekrar açıldığında (expand), 2. buton (Anchor üzerinde seçili olan) açılır menüde GONE olmalı, mükerrer buton oluşmamalı!
+        bar.expand(animate = false)
+        assertThat(bar.isExpanded()).isTrue()
+        assertThat(bar.getButton(0)?.visibility).isEqualTo(View.VISIBLE)
+        assertThat(bar.getButton(1)?.visibility).isEqualTo(View.VISIBLE)
+        assertThat(bar.getButton(2)?.visibility).isEqualTo(View.GONE) // Mükerrer olmaması için gizlendi
     }
 }
