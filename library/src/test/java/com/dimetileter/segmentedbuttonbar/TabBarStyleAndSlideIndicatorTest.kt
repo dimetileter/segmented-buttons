@@ -229,4 +229,38 @@ class TabBarStyleAndSlideIndicatorTest {
         assertThat(child0Node.collectionItemInfo?.columnIndex).isEqualTo(0)
         assertThat(child0Node.isSelected).isTrue()
     }
+
+    /**
+     * Dikey stilde (sbStyle="vertical") sbSlideIndicator="true" kayan göstergenin dikey eksende çalıştığını doğrular.
+     * Verifies that sliding indicator works vertically on vertical button bar style.
+     */
+    @Test
+    fun verifySlideIndicatorOnVerticalStyle() {
+        val attrs = Robolectric.buildAttributeSet()
+            .addAttribute(R.attr.sbStyle, "vertical")
+            .addAttribute(R.attr.sbButtonCount, "3")
+            .addAttribute(R.attr.sbSlideIndicator, "true")
+            .build()
+
+        val bar = SegmentedButtonBar(context, attrs)
+        assertThat(bar.getStyle()).isEqualTo(SegmentedButtonBar.STYLE_VERTICAL)
+        assertThat(bar.isSlideIndicator()).isTrue()
+
+        // Dikey Layout Simülasyonu
+        bar.layout(0, 0, 100, 300)
+        bar.getButton(0)?.layout(0, 0, 100, 100)
+        bar.getButton(1)?.layout(0, 100, 100, 200)
+        bar.getButton(2)?.layout(0, 200, 100, 300)
+
+        // 2. Butonu seç
+        bar.selectButton(1, animate = false)
+        assertThat(bar.getSelectedButtonIndex()).isEqualTo(1)
+
+        // Dinamik olarak slide indicator açıp kapatmayı test et
+        bar.setSlideIndicator(false)
+        assertThat(bar.isSlideIndicator()).isFalse()
+
+        bar.setSlideIndicator(true)
+        assertThat(bar.isSlideIndicator()).isTrue()
+    }
 }

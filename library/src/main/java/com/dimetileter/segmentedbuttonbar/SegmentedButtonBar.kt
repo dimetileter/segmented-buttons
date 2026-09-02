@@ -84,8 +84,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
         private const val DEFAULT_BUTTON_COUNT = 2
         private const val DEFAULT_VERTICAL_COUNT = 3
         private const val DEFAULT_EXPANDABLE_COUNT = 3
-        private const val EXPAND_ANIMATION_DURATION_MS = 200L
-        private const val COLLAPSE_ANIMATION_DURATION_MS = 100L
+        private const val EXPAND_ANIMATION_DURATION_MS = 260L
+        private const val COLLAPSE_ANIMATION_DURATION_MS = 220L
         private const val DEFAULT_INDICATOR_DURATION_MS = 250L
     }
 
@@ -129,7 +129,9 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
     // Kayan Gösterge (Sliding Indicator) Çizim Durumları
     private var indicatorLeft: Float = 0f
+    private var indicatorTop: Float = 0f
     private var indicatorRight: Float = 0f
+    private var indicatorBottom: Float = 0f
     private var isIndicatorPositionInitialized: Boolean = false
     private var indicatorAnimator: ValueAnimator? = null
     private var indicatorDrawable: Drawable? = null
@@ -522,15 +524,25 @@ class SegmentedButtonBar @JvmOverloads constructor(
             val customCd = getButtonContentDescriptionAttr(ta, i)
             val customTooltip = getButtonTooltipAttr(ta, i)
 
-            applyButtonBackground(
-                itemView,
-                isCircular = false,
-                customBackgroundDrawable = customBg,
-                selectedCustomDrawable = selectedBg ?: globalSelectedBackground,
-                selectedCustomColor = selectedCol ?: globalSelectedColor,
-                showUnselectedBg = showUnselectedBackground,
-                unselectedCustomColor = unselectedButtonColor
-            )
+            if (!slideIndicator) {
+                applyButtonBackground(
+                    itemView,
+                    isCircular = false,
+                    customBackgroundDrawable = customBg,
+                    selectedCustomDrawable = selectedBg ?: globalSelectedBackground,
+                    selectedCustomColor = selectedCol ?: globalSelectedColor,
+                    showUnselectedBg = showUnselectedBackground,
+                    unselectedCustomColor = unselectedButtonColor
+                )
+            } else {
+                val cornerRadius = context.resources.getDimension(R.dimen.sb_button_radius)
+                itemView.background = GradientDrawable().apply {
+                    shape = GradientDrawable.RECTANGLE
+                    this.cornerRadius = cornerRadius
+                    setColor(Color.TRANSPARENT)
+                }
+                applyButtonRipple(itemView, isCircular = false)
+            }
 
             val hasIcon = (iconRes != 0)
             val hasText = !textVal.isNullOrEmpty()
@@ -1056,9 +1068,11 @@ class SegmentedButtonBar @JvmOverloads constructor(
         super.onLayout(changed, l, t, r, b)
         if (slideIndicator && buttonViews.isNotEmpty() && selectedIndex in buttonViews.indices) {
             val target = buttonViews[selectedIndex]
-            if (target.width > 0 && (!isIndicatorPositionInitialized || changed)) {
+            if (target.width > 0 && target.height > 0 && (!isIndicatorPositionInitialized || changed)) {
                 indicatorLeft = target.left.toFloat()
+                indicatorTop = target.top.toFloat()
                 indicatorRight = target.right.toFloat()
+                indicatorBottom = target.bottom.toFloat()
                 isIndicatorPositionInitialized = true
                 invalidate()
             }
@@ -1068,15 +1082,15 @@ class SegmentedButtonBar @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         if (slideIndicator && buttonViews.isNotEmpty() && selectedIndex in buttonViews.indices) {
             val selectedView = buttonViews[selectedIndex]
-            if (!isIndicatorPositionInitialized && selectedView.width > 0) {
+            if (!isIndicatorPositionInitialized && selectedView.width > 0 && selectedView.height > 0) {
                 indicatorLeft = selectedView.left.toFloat()
+                indicatorTop = selectedView.top.toFloat()
                 indicatorRight = selectedView.right.toFloat()
+                indicatorBottom = selectedView.bottom.toFloat()
                 isIndicatorPositionInitialized = true
             }
 
-            if (isIndicatorPositionInitialized && indicatorRight > indicatorLeft) {
-                val barPaddingTop = paddingTop.toFloat()
-                val barPaddingBottom = (height - paddingBottom).toFloat()
+            if (isIndicatorPositionInitialized && indicatorRight > indicatorLeft && indicatorBottom > indicatorTop) {
                 val cornerRadius = context.resources.getDimension(R.dimen.sb_button_radius)
 
                 val drawable = globalSelectedBackground ?: indicatorDrawable ?: GradientDrawable().apply {
@@ -1088,9 +1102,9 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
                 drawable.setBounds(
                     indicatorLeft.toInt(),
-                    barPaddingTop.toInt(),
+                    indicatorTop.toInt(),
                     indicatorRight.toInt(),
-                    barPaddingBottom.toInt()
+                    indicatorBottom.toInt()
                 )
                 drawable.draw(canvas)
             }
@@ -1271,6 +1285,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
         super.onMeasure(targetWidthSpec, heightMeasureSpec)
     }
 
+    private fun isViewCircular(view: View): Boolean {
+        return view.id == R.id.sb_circular_root || currentStyle == STYLE_CIRCULAR
+    }
+
     // ==========================================
     // Public API — Sliding Pill Indicator & Tabs
     // ==========================================
@@ -1278,8 +1296,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
     fun setSlideIndicator(enabled: Boolean) {
         slideIndicator = enabled
         isIndicatorPositionInitialized = false
-        buttonViews.forEachIndexed { i, view ->
-            val isCircular = (getButtonStyle(context.obtainStyledAttributes(intArrayOf()), i) == BUTTON_STYLE_CIRCULAR)
+        buttonViews.forEach { view ->
+            val isCircular = isViewCircular(view)
             if (enabled) {
                 val cornerRadius = context.resources.getDimension(R.dimen.sb_button_radius)
                 view.background = GradientDrawable().apply {
@@ -1324,18 +1342,24 @@ class SegmentedButtonBar @JvmOverloads constructor(
         val nextView = buttonViews.getOrNull(position + 1) ?: currentView
 
         val targetLeft = currentView.left + positionOffset * (nextView.left - currentView.left)
+        val targetTop = currentView.top + positionOffset * (nextView.top - currentView.top)
         val targetRight = currentView.right + positionOffset * (nextView.right - currentView.right)
+        val targetBottom = currentView.bottom + positionOffset * (nextView.bottom - currentView.bottom)
 
         indicatorLeft = targetLeft
+        indicatorTop = targetTop
         indicatorRight = targetRight
+        indicatorBottom = targetBottom
         isIndicatorPositionInitialized = true
         invalidate()
     }
 
-    private fun animateIndicator(targetLeft: Float, targetRight: Float) {
+    private fun animateIndicator(targetLeft: Float, targetTop: Float, targetRight: Float, targetBottom: Float) {
         indicatorAnimator?.cancel()
         val startLeft = indicatorLeft
+        val startTop = indicatorTop
         val startRight = indicatorRight
+        val startBottom = indicatorBottom
 
         indicatorAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
             duration = indicatorDurationMs
@@ -1343,7 +1367,9 @@ class SegmentedButtonBar @JvmOverloads constructor(
             addUpdateListener { animator ->
                 val fraction = animator.animatedFraction
                 indicatorLeft = startLeft + fraction * (targetLeft - startLeft)
+                indicatorTop = startTop + fraction * (targetTop - startTop)
                 indicatorRight = startRight + fraction * (targetRight - startRight)
+                indicatorBottom = startBottom + fraction * (targetBottom - startBottom)
                 invalidate()
             }
             start()
@@ -1510,6 +1536,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
             targetChildren.forEach { child ->
                 child.visibility = View.VISIBLE
                 child.alpha = 1f
+                child.scaleX = 1f
+                child.scaleY = 1f
                 child.translationX = 0f
             }
             isExpanded = true
@@ -1519,26 +1547,36 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
 
         isAnimating = true
+        val totalCount = targetChildren.size
+        var finishedCount = 0
+
         targetChildren.forEachIndexed { animIndex, child ->
             child.visibility = View.VISIBLE
             child.alpha = 0f
+            child.scaleX = 0.82f
+            child.scaleY = 0.82f
             val startTranslation = if (expandDirection == EXPAND_START) 24f else -24f
             child.translationX = startTranslation
 
-            val delay = (animIndex * 20L)
+            val delay = (animIndex * 22L)
             child.animate()
                 .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
                 .translationX(0f)
                 .setStartDelay(delay)
                 .setDuration(EXPAND_ANIMATION_DURATION_MS)
-                .setInterpolator(OvershootInterpolator(1.1f))
-                .setListener(if (animIndex == targetChildren.size - 1) object : AnimatorListenerAdapter() {
+                .setInterpolator(OvershootInterpolator(1.15f))
+                .setListener(object : AnimatorListenerAdapter() {
                     override fun onAnimationEnd(animation: Animator) {
-                        isAnimating = false
-                        isExpanded = true
-                        onExpandChangeListener?.invoke(true)
+                        finishedCount++
+                        if (finishedCount == totalCount) {
+                            isAnimating = false
+                            isExpanded = true
+                            onExpandChangeListener?.invoke(true)
+                        }
                     }
-                } else null)
+                })
                 .start()
         }
     }
@@ -1561,6 +1599,9 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 if (index > 0) {
                     view.visibility = View.GONE
                     view.alpha = 0f
+                    view.scaleX = 1f
+                    view.scaleY = 1f
+                    view.translationX = 0f
                 }
             }
             isExpanded = false
@@ -1570,18 +1611,29 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
 
         isAnimating = true
+        val totalCount = activeVisibleChildren.size
+        var finishedCount = 0
+
         activeVisibleChildren.forEachIndexed { animIndex, child ->
-            val endTranslation = if (expandDirection == EXPAND_START) 12f else -12f
+            val endTranslation = if (expandDirection == EXPAND_START) 18f else -18f
+            val delay = ((totalCount - 1 - animIndex) * 12L)
+
             child.animate()
                 .alpha(0f)
+                .scaleX(0.82f)
+                .scaleY(0.82f)
                 .translationX(endTranslation)
-                .setStartDelay(0L)
+                .setStartDelay(delay)
                 .setDuration(COLLAPSE_ANIMATION_DURATION_MS)
-                .setInterpolator(FastOutLinearInInterpolator())
+                .setInterpolator(FastOutSlowInInterpolator())
                 .setListener(object : AnimatorListenerAdapter() {
                     override fun onAnimationEnd(animation: Animator) {
                         child.visibility = View.GONE
-                        if (animIndex == activeVisibleChildren.size - 1) {
+                        child.scaleX = 1f
+                        child.scaleY = 1f
+                        child.translationX = 0f
+                        finishedCount++
+                        if (finishedCount == totalCount) {
                             isAnimating = false
                             isExpanded = false
                             onExpandChangeListener?.invoke(false)
@@ -1634,14 +1686,18 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
         if (slideIndicator && buttonViews.isNotEmpty()) {
             val targetView = buttonViews[index]
-            if (targetView.width > 0) {
+            if (targetView.width > 0 && targetView.height > 0) {
                 val targetLeft = targetView.left.toFloat()
+                val targetTop = targetView.top.toFloat()
                 val targetRight = targetView.right.toFloat()
+                val targetBottom = targetView.bottom.toFloat()
                 if (animate && isIndicatorPositionInitialized) {
-                    animateIndicator(targetLeft, targetRight)
+                    animateIndicator(targetLeft, targetTop, targetRight, targetBottom)
                 } else {
                     indicatorLeft = targetLeft
+                    indicatorTop = targetTop
                     indicatorRight = targetRight
+                    indicatorBottom = targetBottom
                     isIndicatorPositionInitialized = true
                     invalidate()
                 }
@@ -1661,6 +1717,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
         buttonViews.forEach { it.isSelected = false }
         if (slideIndicator) {
             isIndicatorPositionInitialized = false
+            indicatorLeft = 0f
+            indicatorTop = 0f
+            indicatorRight = 0f
+            indicatorBottom = 0f
             invalidate()
         }
     }
@@ -1724,8 +1784,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
             invalidate()
             return
         }
-        buttonViews.forEachIndexed { i, view ->
-            val isCircular = (getButtonStyle(context.obtainStyledAttributes(intArrayOf()), i) == BUTTON_STYLE_CIRCULAR)
+        buttonViews.forEach { view ->
+            val isCircular = isViewCircular(view)
             applyButtonBackground(
                 view,
                 isCircular = isCircular,
@@ -1744,8 +1804,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
             invalidate()
             return
         }
-        buttonViews.forEachIndexed { i, view ->
-            val isCircular = (currentStyle == STYLE_CIRCULAR)
+        buttonViews.forEach { view ->
+            val isCircular = isViewCircular(view)
             applyButtonBackground(
                 view,
                 isCircular = isCircular,
@@ -1790,15 +1850,17 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
     fun setBarBackground(drawable: Drawable?) {
         background = drawable
+        if (drawable != null) {
+            background = drawable
+        }
     }
 
-    fun setBarBackgroundColor(@ColorInt color: Int) {
-        val cornerRadius = context.resources.getDimension(R.dimen.sb_bar_radius)
-        val shape = GradientDrawable().apply {
-            this.cornerRadius = cornerRadius
-            setColor(color)
-        }
-        background = shape
+    fun setBarBackground(@ColorInt color: Int) {
+        setBackgroundColor(color)
+    }
+
+    fun setBarBackgroundResource(@DrawableRes resId: Int) {
+        background = ContextCompat.getDrawable(context, resId)
     }
 
     // ==========================================
@@ -1839,8 +1901,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
      */
     fun setRippleColor(@ColorInt color: Int) {
         globalRippleColor = color
-        buttonViews.forEachIndexed { i, view ->
-            val isCircular = (getButtonStyle(context.obtainStyledAttributes(intArrayOf()), i) == BUTTON_STYLE_CIRCULAR)
+        buttonViews.forEach { view ->
+            val isCircular = isViewCircular(view)
             applyButtonRipple(view, isCircular)
         }
     }
