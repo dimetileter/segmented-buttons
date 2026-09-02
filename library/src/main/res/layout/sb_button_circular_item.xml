@@ -17,7 +17,7 @@
         android:id="@+id/sb_circular_icon"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scaleType="center"
+        android:scaleType="centerInside"
         android:contentDescription="@null"
         android:duplicateParentState="true"
         tools:src="@drawable/ic_sb_arrow_next" />
