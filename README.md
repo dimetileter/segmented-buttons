@@ -44,7 +44,7 @@ In your module's `build.gradle.kts` (e.g. `app/build.gradle.kts`):
 
 ```kotlin
 dependencies {
-    implementation("com.github.dimetileter:segmented-buttons:v1.0.8")
+    implementation("com.github.dimetileter:segmented-buttons:1.0.8")
 }
 ```
 
