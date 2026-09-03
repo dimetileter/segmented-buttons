@@ -44,7 +44,7 @@ In your module's `build.gradle.kts` (e.g. `app/build.gradle.kts`):
 
 ```kotlin
 dependencies {
-    implementation("com.github.dimetileter:segmented-buttons:1.0.9")
+    implementation("com.github.dimetileter:segmented-buttons:1.0.10")
 }
 ```
 
@@ -135,7 +135,7 @@ An 80×32dp action pill button supporting `next`, `back`, and `text` actions wit
 
 ### 5. Expandable Style (`expandable`)
 
-An animated bar that starts collapsed (44×44dp) and smoothly expands on tap. Supports auto-collapsing to the selected action (`sbCollapseOnSelect="true"`):
+An ultra-smooth animated bar that starts collapsed (44×44dp) and smoothly expands on tap. Features **frame-by-frame synchronized container morphing** and supports 4 expansion directions (`end`/`right`, `start`/`left`, `down`/`bottom`, `up`/`top`), as well as auto-collapsing to the selected action (`sbCollapseOnSelect="true"`):
 
 ```xml
 <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -148,7 +148,7 @@ An animated bar that starts collapsed (44×44dp) and smoothly expands on tap. Su
     app:sbButton1Icon="@drawable/ic_add"
     app:sbButton2Icon="@drawable/ic_camera"
     app:sbButton3Icon="@drawable/ic_gallery"
-    app:sbExpandDirection="end" />
+    app:sbExpandDirection="down" />
 ```
 
 ### 6. Modern TabBar Style (`tab`)
@@ -209,10 +209,9 @@ segmentedBar.expand(animate = true)
 segmentedBar.collapse(animate = true)
 segmentedBar.toggleExpand(animate = true)
 segmentedBar.setCollapseOnSelect(true)
+segmentedBar.setExpandDirection(SegmentedButtonBar.EXPAND_DOWN) // EXPAND_END, EXPAND_START, EXPAND_DOWN, EXPAND_UP
 segmentedBar.setOnExpandChangeListener { isExpanded ->
     // Track expand/collapse state
-}
-    // Responding to expand/collapse animation state
 }
 
 // Selection & State Management
@@ -268,6 +267,7 @@ segmentedBar.setBarBackgroundColor(Color.parseColor("#222222"))
 | `app:sbAllActivated` | `boolean` | `false` | Set `isActivated` for all buttons at once |
 | `app:sbPillActivated` | `boolean` | `false` | Initial locked/active state for pill buttons |
 | `app:sbIconTint` | `color` | `@null` | Global tint color or ColorStateList applied to all button icons |
+| `app:sbTextColor` | `color` | `@null` | Global text color or ColorStateList applied to all button labels |
 | `app:sbSelectedBackground` | `reference` | `@null` | Custom drawable or gradient for selected buttons |
 | `app:sbSelectedColor` | `color` | `@null` | Custom solid color for selected buttons |
 | `app:sbBarBackground` | `reference\|color` | `@null` | Override bar container background drawable/color |
@@ -280,6 +280,7 @@ segmentedBar.setBarBackgroundColor(Color.parseColor("#222222"))
 | `app:sbButton1Icon` .. `app:sbButton6Icon` | `reference` | `@null` | Icon resource drawable for the corresponding button |
 | `app:sbButton1Text` .. `app:sbButton6Text` | `string` | `@null` | Text label for the corresponding button |
 | `app:sbButton1IconTint` .. `app:sbButton6IconTint` | `color` | `@null` | Individual icon tint per button |
+| `app:sbButton1TextColor` .. `app:sbButton6TextColor` | `color` | `@null` | Individual text color per button |
 | `app:sbButton1Tooltip` .. `app:sbButton6Tooltip` | `string` | `@null` | Tooltip text displayed on long press |
 | `app:sbButton1ContentDescription` .. `app:sbButton6ContentDescription` | `string` | `@null` | TalkBack accessibility content description |
 | `app:sbButton1SelectedBackground` .. `app:sbButton6SelectedBackground` | `reference` | `@null` | Custom selected background drawable/gradient per button |
@@ -290,7 +291,7 @@ segmentedBar.setBarBackgroundColor(Color.parseColor("#222222"))
 | `app:sbAutoSelect` | `boolean` | `true` | Automatically toggle `isSelected` on tap |
 | `app:sbMaxWidth` | `dimension` | `match_parent` | Optional maximum width cap for responsive layouts |
 | `app:sbPillType` | `enum` | `next` | Action type for pill style (`next`, `back`, `text`) |
-| `app:sbExpandDirection` | `enum` | `end` | Direction for expandable expansion (`end`, `start`) |
+| `app:sbExpandDirection` | `enum` | `end` | Direction for expandable expansion (`end`/`right`, `start`/`left`, `down`/`bottom`, `up`/`top`) |
 | `app:sbCollapseOnSelect` | `boolean` | `false` | Automatically collapse expandable bar to selected item upon click |
 | `app:sbElevation` | `dimension` | `0dp` | Bar elevation and shadow depth |
 
@@ -312,6 +313,11 @@ $$\text{Radius}_{\text{button}} = \text{Radius}_{\text{bar}} - \text{Padding}_{\
 ---
 
 ## 📝 Release Notes
+
+### v1.0.10
+- **Synchronized Container Morphing Animation**: Real-time frame-by-frame capsule dimension morphing tightly synchronized with child button fade and glide physics for ultra-smooth expand and collapse transitions.
+- **4-Directional Expandable Expansion (`app:sbExpandDirection`, `setExpandDirection()`)**: Full support for `end`/`right`, `start`/`left`, `down`/`bottom`, and `up`/`top` with automatic visual layout reordering and anchor pinning.
+- **Per-Button and Global Text Color (`app:sbTextColor`, `app:sbButton1TextColor` .. `app:sbButton6TextColor`, `setTextColor()`, `setButtonTextColor()`)**: Comprehensive XML and programmatic customization for button text colors and state lists.
 
 ### v1.0.9
 - **Bar Container Background Color (`app:sbBarColor` & `setBarColor`)**: Added direct color customization for the outer bar capsule container while strictly preserving the 60dp rounded pill corner geometry.

@@ -31,10 +31,16 @@
             <enum name="text" value="2" />
         </attr>
 
-        <!-- Expansion direction for expandable style / Genişleme yönü -->
+        <!-- Expansion direction for expandable style / Genişleme yönü (end/right, start/left, down/bottom, up/top) -->
         <attr name="sbExpandDirection" format="enum">
             <enum name="end" value="0" />
             <enum name="start" value="1" />
+            <enum name="down" value="2" />
+            <enum name="up" value="3" />
+            <enum name="right" value="0" />
+            <enum name="left" value="1" />
+            <enum name="bottom" value="2" />
+            <enum name="top" value="3" />
         </attr>
 
         <!-- Auto-collapse expandable bar after selecting a child button / Seçim sonrası otomatik daralma -->
@@ -49,8 +55,9 @@
         <!-- Bar elevation & shadow / Çubuk gölge ve yükseklik seviyesi -->
         <attr name="sbElevation" format="dimension" />
 
-        <!-- Global icon tint / Genel ikon renk tonu -->
+        <!-- Global icon tint and text color / Genel ikon renk tonu ve metin rengi -->
         <attr name="sbIconTint" format="color|reference" />
+        <attr name="sbTextColor" format="color|reference" />
 
         <!-- Global all-activated toggle / Tüm butonların aktiflik durumunu tek ayarla belirleme -->
         <attr name="sbAllActivated" format="boolean" />
@@ -109,6 +116,7 @@
         <attr name="sbButton1Icon" format="reference" />
         <attr name="sbButton1Text" format="string" />
         <attr name="sbButton1IconTint" format="color|reference" />
+        <attr name="sbButton1TextColor" format="color|reference" />
         <attr name="sbButton1Selected" format="boolean" />
         <attr name="sbButton1Activated" format="boolean" />
         <attr name="sbButton1Enabled" format="boolean" />
@@ -121,6 +129,7 @@
         <attr name="sbButton2Icon" format="reference" />
         <attr name="sbButton2Text" format="string" />
         <attr name="sbButton2IconTint" format="color|reference" />
+        <attr name="sbButton2TextColor" format="color|reference" />
         <attr name="sbButton2Selected" format="boolean" />
         <attr name="sbButton2Activated" format="boolean" />
         <attr name="sbButton2Enabled" format="boolean" />
@@ -133,6 +142,7 @@
         <attr name="sbButton3Icon" format="reference" />
         <attr name="sbButton3Text" format="string" />
         <attr name="sbButton3IconTint" format="color|reference" />
+        <attr name="sbButton3TextColor" format="color|reference" />
         <attr name="sbButton3Selected" format="boolean" />
         <attr name="sbButton3Activated" format="boolean" />
         <attr name="sbButton3Enabled" format="boolean" />
@@ -145,6 +155,7 @@
         <attr name="sbButton4Icon" format="reference" />
         <attr name="sbButton4Text" format="string" />
         <attr name="sbButton4IconTint" format="color|reference" />
+        <attr name="sbButton4TextColor" format="color|reference" />
         <attr name="sbButton4Selected" format="boolean" />
         <attr name="sbButton4Activated" format="boolean" />
         <attr name="sbButton4Enabled" format="boolean" />
@@ -157,6 +168,7 @@
         <attr name="sbButton5Icon" format="reference" />
         <attr name="sbButton5Text" format="string" />
         <attr name="sbButton5IconTint" format="color|reference" />
+        <attr name="sbButton5TextColor" format="color|reference" />
         <attr name="sbButton5Selected" format="boolean" />
         <attr name="sbButton5Activated" format="boolean" />
         <attr name="sbButton5Enabled" format="boolean" />
@@ -169,6 +181,7 @@
         <attr name="sbButton6Icon" format="reference" />
         <attr name="sbButton6Text" format="string" />
         <attr name="sbButton6IconTint" format="color|reference" />
+        <attr name="sbButton6TextColor" format="color|reference" />
         <attr name="sbButton6Selected" format="boolean" />
         <attr name="sbButton6Activated" format="boolean" />
         <attr name="sbButton6Enabled" format="boolean" />

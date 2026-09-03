@@ -135,23 +135,45 @@
             app:sbButton3Icon="@drawable/ic_sb_arrow_next"
             android:layout_marginBottom="20dp" />
 
-        <!-- 6. Expandable Animated Style -->
+        <!-- 6. Expandable Animated Style (Horizontal & Vertical) -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="6. Expandable Animated Style"
+            android:text="6. Expandable Animated Style (Horizontal &amp; Vertical)"
             android:layout_marginBottom="8dp" />
 
-        <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
-            android:id="@+id/expandableBar"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:sbStyle="expandable"
-            app:sbButtonCount="3"
-            app:sbButton1Icon="@drawable/ic_sb_arrow_next"
-            app:sbButton2Icon="@drawable/ic_sb_arrow_back"
-            app:sbButton3Icon="@drawable/ic_sb_arrow_next"
-            android:layout_marginBottom="20dp" />
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="20dp">
+
+            <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
+                android:id="@+id/expandableBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:sbStyle="expandable"
+                app:sbButtonCount="3"
+                app:sbCollapseOnSelect="true"
+                app:sbExpandDirection="end"
+                app:sbButton1Icon="@drawable/ic_sb_arrow_next"
+                app:sbButton2Icon="@drawable/ic_sb_arrow_back"
+                app:sbButton3Icon="@drawable/ic_sb_arrow_next"
+                android:layout_marginEnd="16dp" />
+
+            <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
+                android:id="@+id/expandableVerticalBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:sbStyle="expandable"
+                app:sbButtonCount="3"
+                app:sbCollapseOnSelect="true"
+                app:sbExpandDirection="down"
+                app:sbButton1Icon="@drawable/ic_sb_arrow_next"
+                app:sbButton2Icon="@drawable/ic_sb_arrow_back"
+                app:sbButton3Icon="@drawable/ic_sb_arrow_next" />
+        </LinearLayout>
 
         <!-- 7. Pill Style (Next Button) -->
         <TextView

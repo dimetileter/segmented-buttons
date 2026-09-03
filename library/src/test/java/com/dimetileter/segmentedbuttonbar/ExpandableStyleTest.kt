@@ -170,4 +170,50 @@ class ExpandableStyleTest {
         assertThat(bar.getButton(1)?.visibility).isEqualTo(View.VISIBLE)
         assertThat(bar.getButton(2)?.visibility).isEqualTo(View.GONE) // Mükerrer olmaması için gizlendi
     }
+
+    /**
+     * 4 farklı genişleme yönünün (end/start/down/up) ve dinamik yön değişiminin doğru çalıştığını test eder.
+     * Tests all 4 expansion directions (end, start, down, up) and dynamic direction updates.
+     */
+    @Test
+    fun verifyExpandDirectionsAndDynamicChanges() {
+        // 1. Dikey Aşağıya Doğru Genişleme (Down)
+        val downAttrs = Robolectric.buildAttributeSet()
+            .addAttribute(R.attr.sbStyle, "expandable")
+            .addAttribute(R.attr.sbButtonCount, "3")
+            .addAttribute(R.attr.sbExpandDirection, "down")
+            .build()
+        val downBar = SegmentedButtonBar(context, downAttrs)
+        assertThat(downBar.getExpandDirection()).isEqualTo(SegmentedButtonBar.EXPAND_DOWN)
+        assertThat(downBar.orientation).isEqualTo(android.widget.LinearLayout.VERTICAL)
+
+        // 2. Dikey Yukarıya Doğru Genişleme (Up)
+        val upAttrs = Robolectric.buildAttributeSet()
+            .addAttribute(R.attr.sbStyle, "expandable")
+            .addAttribute(R.attr.sbButtonCount, "3")
+            .addAttribute(R.attr.sbExpandDirection, "up")
+            .build()
+        val upBar = SegmentedButtonBar(context, upAttrs)
+        assertThat(upBar.getExpandDirection()).isEqualTo(SegmentedButtonBar.EXPAND_UP)
+        assertThat(upBar.orientation).isEqualTo(android.widget.LinearLayout.VERTICAL)
+        // Reverse layout kontrolü: Anchor buton en altta olmalı
+        assertThat(upBar.getChildAt(upBar.childCount - 1)).isEqualTo(upBar.getButton(0))
+
+        // 3. Sola Doğru Genişleme (Start / Left)
+        val startAttrs = Robolectric.buildAttributeSet()
+            .addAttribute(R.attr.sbStyle, "expandable")
+            .addAttribute(R.attr.sbButtonCount, "3")
+            .addAttribute(R.attr.sbExpandDirection, "start")
+            .build()
+        val startBar = SegmentedButtonBar(context, startAttrs)
+        assertThat(startBar.getExpandDirection()).isEqualTo(SegmentedButtonBar.EXPAND_START)
+        assertThat(startBar.orientation).isEqualTo(android.widget.LinearLayout.HORIZONTAL)
+        // Reverse layout kontrolü: Anchor buton en sağda olmalı
+        assertThat(startBar.getChildAt(startBar.childCount - 1)).isEqualTo(startBar.getButton(0))
+
+        // 4. Dinamik setExpandDirection
+        startBar.setExpandDirection(SegmentedButtonBar.EXPAND_UP)
+        assertThat(startBar.getExpandDirection()).isEqualTo(SegmentedButtonBar.EXPAND_UP)
+        assertThat(startBar.orientation).isEqualTo(android.widget.LinearLayout.VERTICAL)
+    }
 }

@@ -78,6 +78,12 @@ class SegmentedButtonBar @JvmOverloads constructor(
         // Genişleme Yönü Sabitleri / Expand Direction Constants
         const val EXPAND_END = 0
         const val EXPAND_START = 1
+        const val EXPAND_DOWN = 2
+        const val EXPAND_UP = 3
+        const val EXPAND_RIGHT = 0
+        const val EXPAND_LEFT = 1
+        const val EXPAND_BOTTOM = 2
+        const val EXPAND_TOP = 3
 
         private const val MIN_BUTTON_COUNT = 1
         private const val MAX_BUTTON_COUNT = 6
@@ -93,6 +99,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
         var text: CharSequence? = null
         var iconRes: Int = 0
         var iconTint: Int? = null
+        var textColor: Int? = null
+        var textColorStateList: ColorStateList? = null
         var tooltip: CharSequence? = null
         var contentDescription: CharSequence? = null
     }
@@ -120,6 +128,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
     private var maxWidthPx: Int = -1
 
     private var globalIconTint: ColorStateList? = null
+    private var globalTextColor: ColorStateList? = null
     private var globalAllActivated: Boolean? = null
     private var globalSelectedBackground: Drawable? = null
     private var globalSelectedColor: Int? = null
@@ -138,6 +147,9 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
     private var isExpanded: Boolean = false
     private var isAnimating: Boolean = false
+    private var expandContainerAnimator: ValueAnimator? = null
+    private var animatingWidth: Int? = null
+    private var animatingHeight: Int? = null
     private var onExpandChangeListener: ((Boolean) -> Unit)? = null
     private var internalFragmentTabListener: ((Int) -> Unit)? = null
     private var userTabSelectedListener: ((Int) -> Unit)? = null
@@ -189,6 +201,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
         indicatorDurationMs = ta.getInt(R.styleable.SegmentedButtonBar_sbIndicatorDuration, DEFAULT_INDICATOR_DURATION_MS.toInt()).toLong()
 
         globalIconTint = ta.getColorStateList(R.styleable.SegmentedButtonBar_sbIconTint)
+        globalTextColor = ta.getColorStateList(R.styleable.SegmentedButtonBar_sbTextColor)
         if (ta.hasValue(R.styleable.SegmentedButtonBar_sbAllActivated)) {
             globalAllActivated = ta.getBoolean(R.styleable.SegmentedButtonBar_sbAllActivated, false)
         }
@@ -397,6 +410,9 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 val iconView = itemView.findViewById<ImageView>(R.id.sb_item_icon)
                 val textView = itemView.findViewById<TextView>(R.id.sb_item_text)
 
+                val perButtonTextColor = getButtonTextColor(ta, i)
+                perButtonTextColor?.let { textView.setTextColor(it) }
+
                 resolveIconTint(perButtonTint)?.let { ImageViewCompat.setImageTintList(iconView, it) }
 
                 if (!slideIndicator) {
@@ -531,6 +547,9 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
             val perButtonTint = getButtonIconTint(ta, i)
             resolveIconTint(perButtonTint)?.let { ImageViewCompat.setImageTintList(iconView, it) }
+
+            val perButtonTextColor = getButtonTextColor(ta, i)
+            perButtonTextColor?.let { textView.setTextColor(it) }
 
             val (iconRes, textVal) = getButtonAttributes(ta, i)
             val (explicitSelected, explicitActivated, explicitEnabled) = getButtonStateAttributes(ta, i)
@@ -722,6 +741,9 @@ class SegmentedButtonBar @JvmOverloads constructor(
         val perButtonTint = getButtonIconTint(ta, 0)
         resolveIconTint(perButtonTint)?.let { ImageViewCompat.setImageTintList(iconView, it) }
 
+        val perButtonTextColor = getButtonTextColor(ta, 0)
+        perButtonTextColor?.let { textView.setTextColor(it) }
+
         val (customBg, selectedBg, selectedCol) = getButtonBackgroundAttributes(ta, 0)
         applyButtonBackground(
             pillView,
@@ -793,12 +815,12 @@ class SegmentedButtonBar @JvmOverloads constructor(
      * Animasyonlu genişleyen (Expandable) buton stilini yapılandırır.
      */
     private fun setupExpandable(ta: TypedArray) {
-        orientation = HORIZONTAL
+        val isVertical = (expandDirection == EXPAND_DOWN || expandDirection == EXPAND_UP)
+        orientation = if (isVertical) VERTICAL else HORIZONTAL
         clipToPadding = true
+        clipChildren = true
 
         val barPadding = context.resources.getDimensionPixelSize(R.dimen.sb_bar_padding)
-        val buttonGap = context.resources.getDimensionPixelSize(R.dimen.sb_button_gap)
-        val circularSize = context.resources.getDimensionPixelSize(R.dimen.sb_circular_button_size)
 
         setPadding(barPadding, barPadding, barPadding, barPadding)
         removeAllViews()
@@ -851,12 +873,6 @@ class SegmentedButtonBar @JvmOverloads constructor(
             val tooltipText = customTooltip ?: textVal ?: customCd
             applyTooltip(itemView, tooltipText)
 
-            val params = LayoutParams(circularSize, circularSize).apply {
-                if (i > 0) {
-                    marginStart = buttonGap
-                }
-            }
-            itemView.layoutParams = params
             itemView.isSelected = explicitSelected ?: false
             itemView.isActivated = explicitActivated ?: (globalAllActivated ?: false)
             itemView.isEnabled = explicitEnabled
@@ -888,10 +904,53 @@ class SegmentedButtonBar @JvmOverloads constructor(
             }
 
             buttonViews.add(itemView)
-            addView(itemView)
         }
 
+        rebuildExpandableLayout()
         isExpanded = false
+    }
+
+    private fun rebuildExpandableLayout() {
+        removeAllViews()
+        val isReverse = (expandDirection == EXPAND_START || expandDirection == EXPAND_UP)
+        val isVertical = (expandDirection == EXPAND_DOWN || expandDirection == EXPAND_UP)
+        val buttonGap = context.resources.getDimensionPixelSize(R.dimen.sb_button_gap)
+        val circularSize = context.resources.getDimensionPixelSize(R.dimen.sb_circular_button_size)
+
+        if (isReverse) {
+            for (i in 1 until buttonViews.size) {
+                val child = buttonViews[i]
+                val params = LayoutParams(circularSize, circularSize).apply {
+                    if (isVertical) {
+                        if (i > 1) topMargin = buttonGap
+                    } else {
+                        if (i > 1) marginStart = buttonGap
+                    }
+                }
+                child.layoutParams = params
+                addView(child)
+            }
+            if (buttonViews.isNotEmpty()) {
+                val anchor = buttonViews[0]
+                val params = LayoutParams(circularSize, circularSize).apply {
+                    if (buttonViews.size > 1) {
+                        if (isVertical) topMargin = buttonGap else marginStart = buttonGap
+                    }
+                }
+                anchor.layoutParams = params
+                addView(anchor)
+            }
+        } else {
+            buttonViews.forEachIndexed { i, child ->
+                val params = LayoutParams(circularSize, circularSize).apply {
+                    if (i > 0) {
+                        if (isVertical) topMargin = buttonGap else marginStart = buttonGap
+                    }
+                }
+                child.layoutParams = params
+                addView(child)
+            }
+        }
     }
 
     /**
@@ -1150,6 +1209,19 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
     }
 
+    private fun getButtonTextColor(ta: TypedArray, index: Int): ColorStateList? {
+        val specific = when (index) {
+            0 -> ta.getColorStateList(R.styleable.SegmentedButtonBar_sbButton1TextColor)
+            1 -> ta.getColorStateList(R.styleable.SegmentedButtonBar_sbButton2TextColor)
+            2 -> ta.getColorStateList(R.styleable.SegmentedButtonBar_sbButton3TextColor)
+            3 -> ta.getColorStateList(R.styleable.SegmentedButtonBar_sbButton4TextColor)
+            4 -> ta.getColorStateList(R.styleable.SegmentedButtonBar_sbButton5TextColor)
+            5 -> ta.getColorStateList(R.styleable.SegmentedButtonBar_sbButton6TextColor)
+            else -> null
+        }
+        return specific ?: globalTextColor
+    }
+
     private fun getButtonBackgroundAttributes(ta: TypedArray, index: Int): Triple<Drawable?, Drawable?, Int?> {
         return when (index) {
             0 -> Triple(
@@ -1297,6 +1369,14 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
 
         super.onMeasure(targetWidthSpec, heightMeasureSpec)
+
+        if (currentStyle == STYLE_EXPANDABLE && isAnimating) {
+            val animW = animatingWidth
+            val animH = animatingHeight
+            val finalW = animW ?: measuredWidth
+            val finalH = animH ?: measuredHeight
+            setMeasuredDimension(finalW, finalH)
+        }
     }
 
     private fun isViewCircular(view: View): Boolean {
@@ -1418,6 +1498,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
                     setButtonIcon(i, cfg.iconRes)
                 }
                 cfg.iconTint?.let { setButtonIconTint(i, it) }
+                cfg.textColor?.let { setButtonTextColor(i, it) }
+                cfg.textColorStateList?.let { setButtonTextColor(i, it) }
                 cfg.tooltip?.let { setButtonTooltip(i, it) }
                 cfg.contentDescription?.let { setButtonContentDescription(i, it) }
             }
@@ -1527,6 +1609,12 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
     fun expand(animate: Boolean = true) {
         if (currentStyle != STYLE_EXPANDABLE || isExpanded || isAnimating) return
+        expandContainerAnimator?.cancel()
+
+        val isVertical = (expandDirection == EXPAND_DOWN || expandDirection == EXPAND_UP)
+        val circularSize = context.resources.getDimensionPixelSize(R.dimen.sb_circular_button_size)
+        val barPadding = context.resources.getDimensionPixelSize(R.dimen.sb_bar_padding)
+        val buttonGap = context.resources.getDimensionPixelSize(R.dimen.sb_button_gap)
 
         // Seçili olan buton ana buton (0) üzerinde zaten gösterilmektedir.
         // Bu nedenle açılır menü içerisinde tekrar gösterilip mükerrer buton oluşması engellenir.
@@ -1546,6 +1634,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
             return
         }
 
+        val totalActiveButtons = targetChildren.size + 1
+        val collapsedSize = circularSize + 2 * barPadding
+        val expandedSize = 2 * barPadding + totalActiveButtons * circularSize + (totalActiveButtons - 1) * buttonGap
+
         if (!animate) {
             targetChildren.forEach { child ->
                 child.visibility = View.VISIBLE
@@ -1553,6 +1645,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 child.scaleX = 1f
                 child.scaleY = 1f
                 child.translationX = 0f
+                child.translationY = 0f
             }
             isExpanded = true
             onExpandChangeListener?.invoke(true)
@@ -1561,16 +1654,49 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
 
         isAnimating = true
-        val totalCount = targetChildren.size
-        var finishedCount = 0
 
+        // 1. Çubuğun Dış Kapsül Boyutunu Eşzamanlı Genişleten Akıcı Morf Animasyonu
+        expandContainerAnimator = ValueAnimator.ofInt(collapsedSize, expandedSize).apply {
+            duration = EXPAND_ANIMATION_DURATION_MS
+            interpolator = FastOutSlowInInterpolator()
+            addUpdateListener { animator ->
+                val currentSize = animator.animatedValue as Int
+                if (isVertical) {
+                    animatingHeight = currentSize
+                } else {
+                    animatingWidth = currentSize
+                }
+                requestLayout()
+            }
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    animatingWidth = null
+                    animatingHeight = null
+                    isAnimating = false
+                    isExpanded = true
+                    requestLayout()
+                    onExpandChangeListener?.invoke(true)
+                }
+            })
+            start()
+        }
+
+        // 2. İç Butonların Kademeli ve Yumuşak Açılış Animasyonu
         targetChildren.forEachIndexed { animIndex, child ->
             child.visibility = View.VISIBLE
             child.alpha = 0f
-            child.scaleX = 0.82f
-            child.scaleY = 0.82f
-            val startTranslation = if (expandDirection == EXPAND_START) 24f else -24f
-            child.translationX = startTranslation
+            child.scaleX = 0.78f
+            child.scaleY = 0.78f
+
+            val (transX, transY) = when (expandDirection) {
+                EXPAND_START, EXPAND_LEFT -> Pair(20f, 0f)
+                EXPAND_END, EXPAND_RIGHT -> Pair(-20f, 0f)
+                EXPAND_UP, EXPAND_TOP -> Pair(0f, 20f)
+                EXPAND_DOWN, EXPAND_BOTTOM -> Pair(0f, -20f)
+                else -> Pair(-20f, 0f)
+            }
+            child.translationX = transX
+            child.translationY = transY
 
             val delay = (animIndex * 22L)
             child.animate()
@@ -1578,25 +1704,22 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 .scaleX(1f)
                 .scaleY(1f)
                 .translationX(0f)
+                .translationY(0f)
                 .setStartDelay(delay)
                 .setDuration(EXPAND_ANIMATION_DURATION_MS)
                 .setInterpolator(OvershootInterpolator(1.15f))
-                .setListener(object : AnimatorListenerAdapter() {
-                    override fun onAnimationEnd(animation: Animator) {
-                        finishedCount++
-                        if (finishedCount == totalCount) {
-                            isAnimating = false
-                            isExpanded = true
-                            onExpandChangeListener?.invoke(true)
-                        }
-                    }
-                })
                 .start()
         }
     }
 
     fun collapse(animate: Boolean = true) {
         if (currentStyle != STYLE_EXPANDABLE || !isExpanded || isAnimating) return
+        expandContainerAnimator?.cancel()
+
+        val isVertical = (expandDirection == EXPAND_DOWN || expandDirection == EXPAND_UP)
+        val circularSize = context.resources.getDimensionPixelSize(R.dimen.sb_circular_button_size)
+        val barPadding = context.resources.getDimensionPixelSize(R.dimen.sb_bar_padding)
+        val buttonGap = context.resources.getDimensionPixelSize(R.dimen.sb_button_gap)
 
         val activeVisibleChildren = buttonViews.filterIndexed { index, view ->
             index > 0 && view.visibility == View.VISIBLE
@@ -1608,6 +1731,15 @@ class SegmentedButtonBar @JvmOverloads constructor(
             return
         }
 
+        val totalActiveButtons = activeVisibleChildren.size + 1
+        val collapsedSize = circularSize + 2 * barPadding
+        val expandedSize = 2 * barPadding + totalActiveButtons * circularSize + (totalActiveButtons - 1) * buttonGap
+        val currentSize = if (isVertical) {
+            if (height > 0) height else expandedSize
+        } else {
+            if (width > 0) width else expandedSize
+        }
+
         if (!animate) {
             buttonViews.forEachIndexed { index, view ->
                 if (index > 0) {
@@ -1616,6 +1748,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
                     view.scaleX = 1f
                     view.scaleY = 1f
                     view.translationX = 0f
+                    view.translationY = 0f
                 }
             }
             isExpanded = false
@@ -1625,35 +1758,61 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
 
         isAnimating = true
-        val totalCount = activeVisibleChildren.size
-        var finishedCount = 0
 
-        activeVisibleChildren.forEachIndexed { animIndex, child ->
-            val endTranslation = if (expandDirection == EXPAND_START) 18f else -18f
-            val delay = ((totalCount - 1 - animIndex) * 12L)
-
-            child.animate()
-                .alpha(0f)
-                .scaleX(0.82f)
-                .scaleY(0.82f)
-                .translationX(endTranslation)
-                .setStartDelay(delay)
-                .setDuration(COLLAPSE_ANIMATION_DURATION_MS)
-                .setInterpolator(FastOutSlowInInterpolator())
-                .setListener(object : AnimatorListenerAdapter() {
-                    override fun onAnimationEnd(animation: Animator) {
+        // 1. Çubuğun Dış Kapsülünü Butonlarla Eşzamanlı Daraltan Morf Animasyonu
+        expandContainerAnimator = ValueAnimator.ofInt(currentSize, collapsedSize).apply {
+            duration = COLLAPSE_ANIMATION_DURATION_MS
+            interpolator = FastOutSlowInInterpolator()
+            addUpdateListener { animator ->
+                val size = animator.animatedValue as Int
+                if (isVertical) {
+                    animatingHeight = size
+                } else {
+                    animatingWidth = size
+                }
+                requestLayout()
+            }
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    animatingWidth = null
+                    animatingHeight = null
+                    activeVisibleChildren.forEach { child ->
                         child.visibility = View.GONE
                         child.scaleX = 1f
                         child.scaleY = 1f
                         child.translationX = 0f
-                        finishedCount++
-                        if (finishedCount == totalCount) {
-                            isAnimating = false
-                            isExpanded = false
-                            onExpandChangeListener?.invoke(false)
-                        }
+                        child.translationY = 0f
                     }
-                })
+                    isAnimating = false
+                    isExpanded = false
+                    requestLayout()
+                    onExpandChangeListener?.invoke(false)
+                }
+            })
+            start()
+        }
+
+        // 2. İç Butonların Çubuğun İçine Doğru Süzülerek Kaybolması (Ters Kademeli Dalga)
+        val totalCount = activeVisibleChildren.size
+        activeVisibleChildren.forEachIndexed { animIndex, child ->
+            val (endTransX, endTransY) = when (expandDirection) {
+                EXPAND_START, EXPAND_LEFT -> Pair(16f, 0f)
+                EXPAND_END, EXPAND_RIGHT -> Pair(-16f, 0f)
+                EXPAND_UP, EXPAND_TOP -> Pair(0f, 16f)
+                EXPAND_DOWN, EXPAND_BOTTOM -> Pair(0f, -16f)
+                else -> Pair(-16f, 0f)
+            }
+            val delay = ((totalCount - 1 - animIndex) * 10L)
+
+            child.animate()
+                .alpha(0f)
+                .scaleX(0.75f)
+                .scaleY(0.75f)
+                .translationX(endTransX)
+                .translationY(endTransY)
+                .setStartDelay(delay)
+                .setDuration(COLLAPSE_ANIMATION_DURATION_MS)
+                .setInterpolator(FastOutSlowInInterpolator())
                 .start()
         }
     }
@@ -1673,6 +1832,18 @@ class SegmentedButtonBar @JvmOverloads constructor(
     }
 
     fun isCollapseOnSelect(): Boolean = collapseOnSelect
+
+    fun setExpandDirection(direction: Int) {
+        if (expandDirection == direction) return
+        expandDirection = direction
+        if (currentStyle == STYLE_EXPANDABLE) {
+            val isVertical = (direction == EXPAND_DOWN || direction == EXPAND_UP)
+            orientation = if (isVertical) VERTICAL else HORIZONTAL
+            rebuildExpandableLayout()
+        }
+    }
+
+    fun getExpandDirection(): Int = expandDirection
 
     // ==========================================
     // Public API — Selection & State Management
@@ -1934,6 +2105,72 @@ class SegmentedButtonBar @JvmOverloads constructor(
 
     fun setButtonIconTint(index: Int, @ColorInt color: Int) {
         setButtonIconTint(index, ColorStateList.valueOf(color))
+    }
+
+    // ==========================================
+    // Public API — Text Color Management
+    // ==========================================
+
+    /**
+     * Tüm butonların metin rengini (ColorStateList) dinamik olarak ayarlar.
+     * Sets the text color (ColorStateList) dynamically across all buttons.
+     */
+    fun setTextColor(colorStateList: ColorStateList?) {
+        globalTextColor = colorStateList
+        buttonViews.forEach { button ->
+            val textView = button.findViewById<TextView>(R.id.sb_item_text)
+                ?: button.findViewById<TextView>(R.id.sb_vertical_text)
+                ?: button.findViewById<TextView>(R.id.sb_pill_text)
+            textView?.let {
+                if (colorStateList != null) {
+                    it.setTextColor(colorStateList)
+                }
+            }
+        }
+    }
+
+    /**
+     * Tüm butonların metin rengini (ColorInt) dinamik olarak ayarlar.
+     * Sets the solid text color dynamically across all buttons.
+     */
+    fun setTextColor(@ColorInt color: Int) {
+        setTextColor(ColorStateList.valueOf(color))
+    }
+
+    /**
+     * Belirli bir butonun metin rengini (ColorStateList) ayarlar.
+     * Sets the text color (ColorStateList) for a specific button.
+     */
+    fun setButtonTextColor(index: Int, colorStateList: ColorStateList?) {
+        val button = buttonViews.getOrNull(index) ?: return
+        val textView = button.findViewById<TextView>(R.id.sb_item_text)
+            ?: button.findViewById<TextView>(R.id.sb_vertical_text)
+            ?: button.findViewById<TextView>(R.id.sb_pill_text)
+        textView?.let {
+            if (colorStateList != null) {
+                it.setTextColor(colorStateList)
+            }
+        }
+    }
+
+    /**
+     * Belirli bir butonun metin rengini (ColorInt) ayarlar.
+     * Sets the solid text color for a specific button.
+     */
+    fun setButtonTextColor(index: Int, @ColorInt color: Int) {
+        setButtonTextColor(index, ColorStateList.valueOf(color))
+    }
+
+    /**
+     * Belirli bir butonun metin rengini (ColorStateList) döndürür.
+     * Returns the ColorStateList text colors of a specific button.
+     */
+    fun getButtonTextColor(index: Int): ColorStateList? {
+        val button = buttonViews.getOrNull(index) ?: return null
+        val textView = button.findViewById<TextView>(R.id.sb_item_text)
+            ?: button.findViewById<TextView>(R.id.sb_vertical_text)
+            ?: button.findViewById<TextView>(R.id.sb_pill_text)
+        return textView?.textColors
     }
 
     /**

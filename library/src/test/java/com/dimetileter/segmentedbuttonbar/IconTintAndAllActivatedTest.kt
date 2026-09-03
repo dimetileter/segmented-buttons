@@ -154,4 +154,34 @@ class IconTintAndAllActivatedTest {
         assertThat(icon1).isNotNull()
         assertThat(ImageViewCompat.getImageTintList(icon1!!)).isNotNull()
     }
+
+    /**
+     * sbTextColor ve sbButton1TextColor..sbButton6TextColor ile buton metin renklerinin değiştirilebildiğini test eder.
+     * Tests global and per-button text color customization.
+     */
+    @Test
+    fun verifyTextColorCustomization() {
+        val attrs = Robolectric.buildAttributeSet()
+            .addAttribute(R.attr.sbStyle, "horizontal")
+            .addAttribute(R.attr.sbButtonCount, "2")
+            .addAttribute(R.attr.sbButton1Text, "Button 1")
+            .addAttribute(R.attr.sbButton2Text, "Button 2")
+            .addAttribute(R.attr.sbButton1TextColor, "#FF0000") // Red
+            .addAttribute(R.attr.sbButton2TextColor, "#0000FF") // Blue
+            .build()
+
+        val bar = SegmentedButtonBar(context, attrs)
+
+        assertThat(bar.getButtonTextColor(0)?.defaultColor).isEqualTo(Color.RED)
+        assertThat(bar.getButtonTextColor(1)?.defaultColor).isEqualTo(Color.BLUE)
+
+        // Runtime setButtonTextColor
+        bar.setButtonTextColor(0, Color.YELLOW)
+        assertThat(bar.getButtonTextColor(0)?.defaultColor).isEqualTo(Color.YELLOW)
+
+        // Runtime global setTextColor
+        bar.setTextColor(Color.GREEN)
+        assertThat(bar.getButtonTextColor(0)?.defaultColor).isEqualTo(Color.GREEN)
+        assertThat(bar.getButtonTextColor(1)?.defaultColor).isEqualTo(Color.GREEN)
+    }
 }
