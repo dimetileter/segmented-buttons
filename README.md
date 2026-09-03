@@ -44,7 +44,7 @@ In your module's `build.gradle.kts` (e.g. `app/build.gradle.kts`):
 
 ```kotlin
 dependencies {
-    implementation("com.github.dimetileter:segmented-buttons:1.0.8")
+    implementation("com.github.dimetileter:segmented-buttons:1.0.9")
 }
 ```
 
@@ -270,7 +270,8 @@ segmentedBar.setBarBackgroundColor(Color.parseColor("#222222"))
 | `app:sbIconTint` | `color` | `@null` | Global tint color or ColorStateList applied to all button icons |
 | `app:sbSelectedBackground` | `reference` | `@null` | Custom drawable or gradient for selected buttons |
 | `app:sbSelectedColor` | `color` | `@null` | Custom solid color for selected buttons |
-| `app:sbBarBackground` | `reference\|color` | `@null` | Override bar container background |
+| `app:sbBarBackground` | `reference\|color` | `@null` | Override bar container background drawable/color |
+| `app:sbBarColor` | `color` | `@null` | Custom bar capsule background color (preserves 60dp pill shape) |
 | `app:sbRippleColor` | `color` | `#14000000` | Custom touch highlight and ripple feedback color |
 | `app:sbAutoTooltip` | `boolean` | `true` | Automatically show tooltips on button long-press |
 | `app:sbSlideIndicator` | `boolean` | `false` (`true` on `tab`) | Smooth sliding pill indicator animation across tabs |
@@ -307,6 +308,17 @@ $$\text{Radius}_{\text{button}} = \text{Radius}_{\text{bar}} - \text{Padding}_{\
 - **Button Gap**: `3dp`
 - **Button Height**: `32dp`
 - **Minimum Button Width**: `80dp`
+
+---
+
+## 📝 Release Notes
+
+### v1.0.9
+- **Bar Container Background Color (`app:sbBarColor` & `setBarColor`)**: Added direct color customization for the outer bar capsule container while strictly preserving the 60dp rounded pill corner geometry.
+- **2D Sliding Indicator for Vertical Bars (`sbStyle="vertical"` & `sbSlideIndicator="true"`)**: Full support for smooth sliding pill selection animation along the vertical Y-axis.
+- **Soft Expandable Animation Physics**: Refined expandable drawer transitions with curved ease-in-out acceleration & deceleration (`FastOutSlowInInterpolator`) and gentle scaling.
+- **Duplicate Button Exclusion**: The currently active button on the anchor is filtered out from the expanded drawer to avoid duplicate items.
+- **Theme-Adaptive Icon Tints**: Default button icons automatically resolve to `@color/sb_button_icon` (dark gray in Light mode, light gray/white in Dark mode).
 
 ---
 

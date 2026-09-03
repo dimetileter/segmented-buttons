@@ -208,10 +208,24 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
 
         val customBarBg = ta.getDrawable(R.styleable.SegmentedButtonBar_sbBarBackground)
-        if (customBarBg != null) {
-            background = customBarBg
-        } else {
-            background = ContextCompat.getDrawable(context, R.drawable.bg_segmented_button_bar)
+        val customBarColor = if (ta.hasValue(R.styleable.SegmentedButtonBar_sbBarColor)) {
+            ta.getColor(R.styleable.SegmentedButtonBar_sbBarColor, 0)
+        } else null
+
+        when {
+            customBarColor != null -> {
+                setBarColor(customBarColor)
+            }
+            customBarBg != null -> {
+                if (customBarBg is ColorDrawable) {
+                    setBarColor(customBarBg.color)
+                } else {
+                    background = customBarBg
+                }
+            }
+            else -> {
+                background = ContextCompat.getDrawable(context, R.drawable.bg_segmented_button_bar)
+            }
         }
 
         val elevationVal = ta.getDimension(R.styleable.SegmentedButtonBar_sbElevation, 0f)
@@ -1848,19 +1862,46 @@ class SegmentedButtonBar @JvmOverloads constructor(
         buttonViews.getOrNull(index)?.background = drawable
     }
 
+    /**
+     * Çubuğun dış sarmalayıcı kapsül arka plan rengini (60dp yuvarlak köşeleri koruyarak) dinamik olarak ayarlar.
+     * Sets the bar container background color dynamically while preserving the 60dp rounded capsule shape.
+     */
+    fun setBarColor(@ColorInt color: Int) {
+        val cornerRadius = context.resources.getDimension(R.dimen.sb_bar_radius)
+        val shape = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            this.cornerRadius = cornerRadius
+            setColor(color)
+        }
+        background = shape
+    }
+
+    /**
+     * Çubuğun arka plan rengini ayarlar (setBarColor ile aynı şekilde 60dp yuvarlak köşeleri korur).
+     */
+    fun setBarBackgroundColor(@ColorInt color: Int) {
+        setBarColor(color)
+    }
+
     fun setBarBackground(drawable: Drawable?) {
-        background = drawable
-        if (drawable != null) {
+        if (drawable is ColorDrawable) {
+            setBarColor(drawable.color)
+        } else if (drawable != null) {
             background = drawable
         }
     }
 
     fun setBarBackground(@ColorInt color: Int) {
-        setBackgroundColor(color)
+        setBarColor(color)
     }
 
     fun setBarBackgroundResource(@DrawableRes resId: Int) {
-        background = ContextCompat.getDrawable(context, resId)
+        val drawable = ContextCompat.getDrawable(context, resId)
+        if (drawable is ColorDrawable) {
+            setBarColor(drawable.color)
+        } else {
+            background = drawable
+        }
     }
 
     // ==========================================

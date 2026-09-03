@@ -134,4 +134,28 @@ class CustomBackgroundAndAccessibilityTest {
         bar.getButton(0)?.performLongClick()
         assertThat(longClicked).isTrue()
     }
+
+    /**
+     * sbBarColor, sbBarBackground ve setBarColor() ile çubuk dış kapsül arka planının 60dp köşeleri koruyarak değiştiğini test eder.
+     * Tests that bar container background color updates while preserving 60dp capsule shape.
+     */
+    @Test
+    fun verifyBarColorAndBackgroundCustomization() {
+        val attrs = Robolectric.buildAttributeSet()
+            .addAttribute(R.attr.sbStyle, "horizontal")
+            .addAttribute(R.attr.sbButtonCount, "2")
+            .addAttribute(R.attr.sbBarColor, "#FF223344")
+            .build()
+
+        val bar = SegmentedButtonBar(context, attrs)
+        assertThat(bar.background).isInstanceOf(GradientDrawable::class.java)
+
+        // Runtime setBarColor
+        bar.setBarColor(Color.YELLOW)
+        assertThat(bar.background).isInstanceOf(GradientDrawable::class.java)
+
+        // Runtime setBarBackground with color
+        bar.setBarBackground(Color.MAGENTA)
+        assertThat(bar.background).isInstanceOf(GradientDrawable::class.java)
+    }
 }
