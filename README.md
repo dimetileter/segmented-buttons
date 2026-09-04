@@ -44,7 +44,7 @@ In your module's `build.gradle.kts` (e.g. `app/build.gradle.kts`):
 
 ```kotlin
 dependencies {
-    implementation("com.github.dimetileter:segmented-buttons:1.0.10")
+    implementation("com.github.dimetileter:segmented-buttons:1.0.11")
 }
 ```
 
@@ -313,6 +313,10 @@ $$\text{Radius}_{\text{button}} = \text{Radius}_{\text{bar}} - \text{Padding}_{\
 ---
 
 ## 📝 Release Notes
+
+### v1.0.11
+- **Full Expandable Button Persistence & Visual Restoration**: Fixed an issue where the initial button (button 0) became permanently hidden/overwritten after selecting other options in expandable mode. All buttons now remain permanently visible and selectable across multiple expand/collapse cycles.
+- **Dynamic Metadata Synchronization**: Runtime updates via `setButtonIcon`, `setButtonIconTint`, `setButtonTooltip`, and `setButtonContentDescription` are automatically synchronized with the expandable memory cache.
 
 ### v1.0.10
 - **Synchronized Container Morphing Animation**: Real-time frame-by-frame capsule dimension morphing tightly synchronized with child button fade and glide physics for ultra-smooth expand and collapse transitions.

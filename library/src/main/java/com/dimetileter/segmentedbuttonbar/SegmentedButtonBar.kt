@@ -880,22 +880,25 @@ class SegmentedButtonBar @JvmOverloads constructor(
             val buttonIndex = i
             if (buttonIndex == 0) {
                 itemView.visibility = View.VISIBLE
-                itemView.setOnClickListener {
-                    toggleExpand()
-                    buttonClickListeners[0]?.invoke()
-                }
             } else {
                 itemView.visibility = View.GONE
                 itemView.alpha = 0f
-                itemView.setOnClickListener {
+            }
+
+            itemView.setOnClickListener {
+                if (!isExpanded) {
+                    expand(animate = true)
+                    buttonClickListeners[selectedIndex]?.invoke()
+                } else {
                     if (autoSelect) {
                         selectButton(buttonIndex)
-                    }
-                    if (collapseOnSelect) {
-                        updateAnchorVisual(buttonIndex)
-                        collapse(animate = true)
+                    } else {
+                        selectedIndex = buttonIndex
                     }
                     buttonClickListeners[buttonIndex]?.invoke()
+                    if (collapseOnSelect) {
+                        collapse(animate = true)
+                    }
                 }
             }
 
@@ -907,6 +910,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
 
         rebuildExpandableLayout()
+        updateCollapsedVisual(selectedIndex)
         isExpanded = false
     }
 
@@ -953,28 +957,20 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
     }
 
-    /**
-     * Expandable stilde seçilen butonun ikon ve stilini çubuğun ana (anchor) butonuna aktarır.
-     * Updates anchor button's visual representation (icon, tint, cd, tooltip) to reflect selected button.
-     */
-    private fun updateAnchorVisual(index: Int) {
-        if (buttonViews.isEmpty() || index !in buttonMetaList.indices) return
-        val anchorView = buttonViews[0]
-        val iconView = anchorView.findViewById<ImageView>(R.id.sb_circular_icon)
-        val meta = buttonMetaList[index]
-
+    private fun applyButtonMetaToView(view: View, meta: ButtonMeta, isSelected: Boolean) {
+        val iconView = view.findViewById<ImageView>(R.id.sb_circular_icon)
         val finalIcon = if (meta.iconRes != 0) meta.iconRes else R.drawable.ic_sb_arrow_next
         iconView?.setImageResource(finalIcon)
         resolveIconTint(meta.iconTint)?.let { ImageViewCompat.setImageTintList(iconView, it) }
 
-        val finalCd = meta.contentDescription ?: meta.text ?: getDefaultContentDescription(index)
-        anchorView.contentDescription = finalCd
+        val finalCd = meta.contentDescription ?: meta.text ?: getDefaultContentDescription(0)
+        view.contentDescription = finalCd
 
         val tooltipText = meta.tooltip ?: meta.text ?: meta.contentDescription
-        applyTooltip(anchorView, tooltipText)
+        applyTooltip(view, tooltipText)
 
         applyButtonBackground(
-            anchorView,
+            view,
             isCircular = true,
             customBackgroundDrawable = meta.customBg,
             selectedCustomDrawable = meta.selectedBg ?: globalSelectedBackground,
@@ -982,7 +978,21 @@ class SegmentedButtonBar @JvmOverloads constructor(
             showUnselectedBg = showUnselectedBackground,
             unselectedCustomColor = unselectedButtonColor
         )
-        anchorView.isSelected = true
+        view.isSelected = isSelected
+    }
+
+    private fun updateCollapsedVisual(index: Int) {
+        if (buttonViews.isEmpty() || index !in buttonMetaList.indices) return
+        val anchorView = buttonViews[0]
+        val meta = buttonMetaList[index]
+        applyButtonMetaToView(anchorView, meta, isSelected = true)
+    }
+
+    private fun restoreButtonVisual(index: Int) {
+        if (index !in buttonViews.indices || index !in buttonMetaList.indices) return
+        val view = buttonViews[index]
+        val meta = buttonMetaList[index]
+        applyButtonMetaToView(view, meta, isSelected = (index == selectedIndex))
     }
 
     /**
@@ -1616,30 +1626,20 @@ class SegmentedButtonBar @JvmOverloads constructor(
         val barPadding = context.resources.getDimensionPixelSize(R.dimen.sb_bar_padding)
         val buttonGap = context.resources.getDimensionPixelSize(R.dimen.sb_button_gap)
 
-        // Seçili olan buton ana buton (0) üzerinde zaten gösterilmektedir.
-        // Bu nedenle açılır menü içerisinde tekrar gösterilip mükerrer buton oluşması engellenir.
-        val targetChildren = mutableListOf<View>()
-        for (i in 1 until buttonViews.size) {
-            val child = buttonViews[i]
-            if (collapseOnSelect && selectedIndex > 0 && i == selectedIndex) {
-                child.visibility = View.GONE
-            } else {
-                targetChildren.add(child)
-            }
+        // 0. butonun görselini orijinal haline (buttonMetaList[0]) geri yükle
+        restoreButtonVisual(0)
+
+        // Tüm butonların seçim durumlarını güncelle
+        buttonViews.forEachIndexed { i, view ->
+            view.isSelected = (i == selectedIndex)
         }
 
-        if (targetChildren.isEmpty()) {
-            isExpanded = true
-            onExpandChangeListener?.invoke(true)
-            return
-        }
-
-        val totalActiveButtons = targetChildren.size + 1
+        val totalActiveButtons = buttonViews.size
         val collapsedSize = circularSize + 2 * barPadding
         val expandedSize = 2 * barPadding + totalActiveButtons * circularSize + (totalActiveButtons - 1) * buttonGap
 
         if (!animate) {
-            targetChildren.forEach { child ->
+            buttonViews.forEach { child ->
                 child.visibility = View.VISIBLE
                 child.alpha = 1f
                 child.scaleX = 1f
@@ -1681,8 +1681,9 @@ class SegmentedButtonBar @JvmOverloads constructor(
             start()
         }
 
-        // 2. İç Butonların Kademeli ve Yumuşak Açılış Animasyonu
-        targetChildren.forEachIndexed { animIndex, child ->
+        // 2. İç Butonların Kademeli ve Yumuşak Açılış Animasyonu (1..N-1)
+        val expandingChildren = if (buttonViews.size > 1) buttonViews.subList(1, buttonViews.size) else emptyList()
+        expandingChildren.forEachIndexed { animIndex, child ->
             child.visibility = View.VISIBLE
             child.alpha = 0f
             child.scaleX = 0.78f
@@ -1721,17 +1722,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
         val barPadding = context.resources.getDimensionPixelSize(R.dimen.sb_bar_padding)
         val buttonGap = context.resources.getDimensionPixelSize(R.dimen.sb_button_gap)
 
-        val activeVisibleChildren = buttonViews.filterIndexed { index, view ->
-            index > 0 && view.visibility == View.VISIBLE
-        }
-
-        if (activeVisibleChildren.isEmpty()) {
-            isExpanded = false
-            onExpandChangeListener?.invoke(false)
-            return
-        }
-
-        val totalActiveButtons = activeVisibleChildren.size + 1
+        val closingChildren = if (buttonViews.size > 1) buttonViews.subList(1, buttonViews.size) else emptyList()
+        val totalActiveButtons = buttonViews.size
         val collapsedSize = circularSize + 2 * barPadding
         val expandedSize = 2 * barPadding + totalActiveButtons * circularSize + (totalActiveButtons - 1) * buttonGap
         val currentSize = if (isVertical) {
@@ -1741,16 +1733,15 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
 
         if (!animate) {
-            buttonViews.forEachIndexed { index, view ->
-                if (index > 0) {
-                    view.visibility = View.GONE
-                    view.alpha = 0f
-                    view.scaleX = 1f
-                    view.scaleY = 1f
-                    view.translationX = 0f
-                    view.translationY = 0f
-                }
+            closingChildren.forEach { view ->
+                view.visibility = View.GONE
+                view.alpha = 0f
+                view.scaleX = 1f
+                view.scaleY = 1f
+                view.translationX = 0f
+                view.translationY = 0f
             }
+            updateCollapsedVisual(selectedIndex)
             isExpanded = false
             onExpandChangeListener?.invoke(false)
             requestLayout()
@@ -1776,13 +1767,14 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 override fun onAnimationEnd(animation: Animator) {
                     animatingWidth = null
                     animatingHeight = null
-                    activeVisibleChildren.forEach { child ->
+                    closingChildren.forEach { child ->
                         child.visibility = View.GONE
                         child.scaleX = 1f
                         child.scaleY = 1f
                         child.translationX = 0f
                         child.translationY = 0f
                     }
+                    updateCollapsedVisual(selectedIndex)
                     isAnimating = false
                     isExpanded = false
                     requestLayout()
@@ -1793,8 +1785,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
 
         // 2. İç Butonların Çubuğun İçine Doğru Süzülerek Kaybolması (Ters Kademeli Dalga)
-        val totalCount = activeVisibleChildren.size
-        activeVisibleChildren.forEachIndexed { animIndex, child ->
+        val totalCount = closingChildren.size
+        closingChildren.forEachIndexed { animIndex, child ->
             val (endTransX, endTransY) = when (expandDirection) {
                 EXPAND_START, EXPAND_LEFT -> Pair(16f, 0f)
                 EXPAND_END, EXPAND_RIGHT -> Pair(-16f, 0f)
@@ -1865,8 +1857,8 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 view.isActivated = false
             }
         }
-        if (currentStyle == STYLE_EXPANDABLE && collapseOnSelect) {
-            updateAnchorVisual(index)
+        if (currentStyle == STYLE_EXPANDABLE && !isExpanded) {
+            updateCollapsedVisual(index)
         }
 
         if (slideIndicator && buttonViews.isNotEmpty()) {
@@ -2095,6 +2087,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
     }
 
     fun setButtonIconTint(index: Int, tintList: ColorStateList?) {
+        if (index in buttonMetaList.indices) {
+            val old = buttonMetaList[index]
+            buttonMetaList[index] = old.copy(iconTint = tintList)
+        }
         val button = buttonViews.getOrNull(index) ?: return
         val iconView = button.findViewById<ImageView>(R.id.sb_item_icon)
             ?: button.findViewById<ImageView>(R.id.sb_vertical_icon)
@@ -2192,6 +2188,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
     // ==========================================
 
     fun setButtonContentDescription(index: Int, contentDescription: CharSequence?) {
+        if (index in buttonMetaList.indices) {
+            val old = buttonMetaList[index]
+            buttonMetaList[index] = old.copy(contentDescription = contentDescription?.toString())
+        }
         buttonViews.getOrNull(index)?.contentDescription = contentDescription
     }
 
@@ -2204,6 +2204,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
     }
 
     fun setButtonTooltip(index: Int, tooltipText: CharSequence?) {
+        if (index in buttonMetaList.indices) {
+            val old = buttonMetaList[index]
+            buttonMetaList[index] = old.copy(tooltip = tooltipText?.toString())
+        }
         val button = buttonViews.getOrNull(index) ?: return
         applyTooltip(button, tooltipText)
     }
@@ -2318,6 +2322,10 @@ class SegmentedButtonBar @JvmOverloads constructor(
     }
 
     fun setButtonIcon(index: Int, @DrawableRes iconRes: Int) {
+        if (index in buttonMetaList.indices) {
+            val old = buttonMetaList[index]
+            buttonMetaList[index] = old.copy(iconRes = iconRes)
+        }
         val button = buttonViews.getOrNull(index) ?: return
         val iconView = button.findViewById<ImageView>(R.id.sb_item_icon)
             ?: button.findViewById<ImageView>(R.id.sb_vertical_icon)
