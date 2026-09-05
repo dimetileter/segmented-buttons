@@ -243,6 +243,58 @@ class ExpandableStyleTest {
     }
 
     /**
+     * Genişletme esnasında (menü kapalıyken tıklama yapıldığında) kayıtlı buton tıklama dinleyicilerinin
+     * (click listener) tetiklenmediğini ve LiveData/ViewModel observer döngüsü olsa dahi
+     * 1. butonun görselinin seçili buton görseliyle ezilmediğini test eder.
+     */
+    @Test
+    fun verifyExpandDoesNotTriggerButtonClickListenersOrOverwriteFirstButton() {
+        val attrs = Robolectric.buildAttributeSet()
+            .addAttribute(R.attr.sbStyle, "expandable")
+            .addAttribute(R.attr.sbButtonCount, "4")
+            .addAttribute(R.attr.sbCollapseOnSelect, "true")
+            .addAttribute(R.attr.sbButton1Icon, "@drawable/ic_sb_arrow_next")
+            .addAttribute(R.attr.sbButton1ContentDescription, "Gunes")
+            .addAttribute(R.attr.sbButton2Icon, "@drawable/ic_sb_arrow_back")
+            .addAttribute(R.attr.sbButton2ContentDescription, "Yaprak")
+            .addAttribute(R.attr.sbButton3Icon, "@drawable/ic_sb_arrow_next")
+            .addAttribute(R.attr.sbButton3ContentDescription, "Kar")
+            .addAttribute(R.attr.sbButton4Icon, "@drawable/ic_sb_arrow_back")
+            .addAttribute(R.attr.sbButton4ContentDescription, "Cicek")
+            .build()
+
+        val bar = SegmentedButtonBar(context, attrs)
+        var winterListenerCalled = false
+
+        bar.setOnButtonClick(2) {
+            winterListenerCalled = true
+            // Gerçek MVVM senaryosu: ViewModel güncellenir ve geri selectButton çağrılır
+            bar.selectButton(2)
+        }
+
+        // Başlangıçta hava tahminiyle Kar (index 2) seçilsin
+        bar.selectButton(2)
+        assertThat(bar.getSelectedButtonIndex()).isEqualTo(2)
+        // Kapalı durumda anchor buton (0) Kar görselini gösterir
+        assertThat(bar.getButton(0)?.contentDescription?.toString()).isEqualTo("Kar")
+
+        // Kullanıcı menüyü açmak için tıklar -> Bar açılır
+        bar.getButton(0)?.performClick()
+        ShadowLooper.idleMainLooper()
+
+        // KRİTİK: Menü açılırken Kar dinleyicisi tetiklenmemelidir!
+        assertThat(winterListenerCalled).isFalse()
+        assertThat(bar.isExpanded()).isTrue()
+
+        // KRİTİK: Açıldığında 1. buton (index 0) Gunes olmalı, Kar olarak kalmamalıdır!
+        assertThat(bar.getButton(0)?.contentDescription?.toString()).isEqualTo("Gunes")
+        assertThat(bar.getButton(1)?.contentDescription?.toString()).isEqualTo("Yaprak")
+        assertThat(bar.getButton(2)?.contentDescription?.toString()).isEqualTo("Kar")
+        assertThat(bar.getButton(2)?.isSelected).isTrue()
+        assertThat(bar.getButton(3)?.contentDescription?.toString()).isEqualTo("Cicek")
+    }
+
+    /**
      * 4 farklı genişleme yönünün (end/start/down/up) ve dinamik yön değişiminin doğru çalıştığını test eder.
      * Tests all 4 expansion directions (end, start, down, up) and dynamic direction updates.
      */

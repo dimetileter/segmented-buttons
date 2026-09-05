@@ -888,7 +888,6 @@ class SegmentedButtonBar @JvmOverloads constructor(
             itemView.setOnClickListener {
                 if (!isExpanded) {
                     expand(animate = true)
-                    buttonClickListeners[selectedIndex]?.invoke()
                 } else {
                     if (autoSelect) {
                         selectButton(buttonIndex)
@@ -1654,6 +1653,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
         }
 
         isAnimating = true
+        isExpanded = true
 
         // 1. Çubuğun Dış Kapsül Boyutunu Eşzamanlı Genişleten Akıcı Morf Animasyonu
         expandContainerAnimator = ValueAnimator.ofInt(collapsedSize, expandedSize).apply {
@@ -1673,7 +1673,6 @@ class SegmentedButtonBar @JvmOverloads constructor(
                     animatingWidth = null
                     animatingHeight = null
                     isAnimating = false
-                    isExpanded = true
                     requestLayout()
                     onExpandChangeListener?.invoke(true)
                 }
@@ -1857,7 +1856,7 @@ class SegmentedButtonBar @JvmOverloads constructor(
                 view.isActivated = false
             }
         }
-        if (currentStyle == STYLE_EXPANDABLE && !isExpanded) {
+        if (currentStyle == STYLE_EXPANDABLE && !isExpanded && !isAnimating) {
             updateCollapsedVisual(index)
         }
 
