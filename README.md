@@ -1,11 +1,12 @@
 # SegmentedButtonBar
 
 [![](https://jitpack.io/v/dimetileter/segmented-buttons.svg)](https://jitpack.io/#dimetileter/segmented-buttons)
+[![CI](https://github.com/dimetileter/segmented-buttons/actions/workflows/ci.yml/badge.svg)](https://github.com/dimetileter/segmented-buttons/actions/workflows/ci.yml)
 [![MinSdk](https://img.shields.io/badge/minSdk-26-brightgreen.svg)](https://android-arsenal.com/api?level=26)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.0.21-blue.svg)](https://kotlinlang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A polished, lightweight, highly customizable Android Segmented Button Bar library built entirely with modern Android standard Views, supporting **6 distinct styles**, XML-first configuration, sliding pill indicators, physics-based spring animations, dark mode, ViewPager2/Fragment integration, and TalkBack accessibility.
+A polished, lightweight, highly customizable Android Segmented Button Bar library built entirely with modern Android standard Views, supporting **6 distinct styles**, XML-first configuration, sliding pill indicators, interpolated expand/collapse animations, dark mode, ViewPager2/Fragment integration, and TalkBack accessibility.
 
 ---
 
@@ -15,9 +16,9 @@ A polished, lightweight, highly customizable Android Segmented Button Bar librar
 - 🛝 **Sliding Pill Indicator**: Smooth, hardware-accelerated indicator sliding across tabs with real-time ViewPager2 drag tracking.
 - 🎨 **Design System Fidelity**: Exact concentric corner radii ($R_{\text{button}} = R_{\text{bar}} - \text{padding}$), pixel-perfect spacing, bounded and unbounded ripples.
 - 🌓 **Full Dark Mode**: Automatic theme-aware color tokens and contrast adherence.
-- 🚀 **Physics-Based Spring Animations**: Fluid expand/collapse animations with natural overshoot dynamics.
-- ⚡ **Zero External Heavy Dependencies**: Pure Android Views, no ViewBinding overhead in library, minSdk 26+.
-- ♿ **Accessibility First**: WCAG-compliant touch targets, dynamic content descriptions, and native TabWidget / Tab role TalkBack semantics.
+- 🚀 **Interpolated Animations**: Fluid expand/collapse animations with `ValueAnimator`, `FastOutSlowInInterpolator`, and controlled overshoot.
+- ⚡ **Lean Dependency Surface**: Pure Android Views in the library UI layer, no ViewBinding overhead in library code, minSdk 26+.
+- ♿ **Accessibility Support**: Dynamic content descriptions, tooltips, and native TabWidget / Tab role TalkBack semantics.
 
 ---
 
@@ -44,7 +45,7 @@ In your module's `build.gradle.kts` (e.g. `app/build.gradle.kts`):
 
 ```kotlin
 dependencies {
-    implementation("com.github.dimetileter:segmented-buttons:1.0.12")
+    implementation("com.github.dimetileter:segmented-button-bar:1.1.0")
 }
 ```
 
@@ -109,7 +110,7 @@ A vertical stacked icon-only button bar (32×48dp items, 3dp gap):
 
 ### 3. Circular Style (`circular`)
 
-A single circular 24×24dp button inside a 36×36dp bar container:
+A single circular 32×32dp button inside the segmented bar container:
 
 ```xml
 <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -179,6 +180,8 @@ segmentedBar.setupWithViewPager2(viewPager2) { config, position ->
     config.text = "Page $position"
     // config.iconRes = R.drawable.ic_tab
 }
+// Clean up bindings in Fragment.onDestroyView()
+segmentedBar.unbindViewPager2()
 
 // FragmentContainerView Integration
 segmentedBar.setupWithFragments(
@@ -186,6 +189,7 @@ segmentedBar.setupWithFragments(
     containerId = R.id.fragmentContainer,
     fragments = listOf(HomeFragment(), ExploreFragment(), ProfileFragment())
 )
+segmentedBar.clearFragmentBinding()
 
 // Tab Selection Callback
 segmentedBar.setOnTabSelectedListener { position ->
@@ -198,7 +202,7 @@ segmentedBar.setOnButton2Click { /* Handle Button 2 click */ }
 segmentedBar.setOnButton3Click { /* Handle Button 3 click */ }
 segmentedBar.setOnButtonClick(index = 0) { /* By index */ }
 
-// Pill Actions
+// Pill Actions (with lock gating)
 segmentedBar.setOnPillClick {
     val isActivated = !segmentedBar.isPillActivated()
     segmentedBar.setPillActivated(isActivated)
@@ -222,7 +226,13 @@ segmentedBar.activateButton(index = 0) // Activates button 0, deactivates others
 segmentedBar.setButtonSelected(index = 0, selected = true)
 segmentedBar.setButtonActivated(index = 0, activated = true)
 segmentedBar.setButtonEnabled(index = 0, enabled = false)
+
+// Status Queries
+val isSelected = segmentedBar.isButtonSelected(index = 0)
+val isActivated = segmentedBar.isButtonActivated(index = 0)
+val isEnabled = segmentedBar.isButtonEnabled(index = 0)
 val selectedIndex = segmentedBar.getSelectedButtonIndex()
+val currentStyle = segmentedBar.getStyle()
 
 // Tooltip & TalkBack Accessibility
 segmentedBar.setButtonContentDescription(0, "Capture Photo")
@@ -242,7 +252,7 @@ segmentedBar.setBarBackgroundColor(Color.parseColor("#222222"))
 
 ## 💡 Recommended Practices & Tips
 
-- **Handling Many Buttons (4+ or 5+)**: When using many buttons in a single bar (e.g. 4, 5 or 6 items), it is strongly recommended to prefer **circular** (icon-only) button styles (`app:sbButton*Style="circular"`) and omit text labels. Text labels on 4+ items may cause cramped horizontal spacing on smaller screens, whereas icon-only circular buttons maintain clean touch targets, optical harmony, and compact responsive layouts.
+- **Handling Many Buttons (4+ or 5+)**: When using many buttons in a single bar (e.g. 4, 5 or 6 items), it is strongly recommended to prefer **circular** (icon-only) button styles (`app:sbButton*Style="circular"`) and omit text labels. Text labels on 4+ items may cause cramped horizontal spacing on smaller screens, whereas icon-only circular buttons preserve the component geometry and compact responsive layouts.
 - **Outline vs. Filled Icon States**: For optimal visual feedback, provide a `StateListDrawable` (or dynamic state drawable) for button icons so that when a button becomes selected (`android:state_selected="true"`), its icon automatically switches to a **filled** variant (e.g. `ic_bookmark_filled`), and when deselected, it reverts back to an **outlined** variant (e.g. `ic_bookmark_outlined`):
   ```xml
   <!-- res/drawable/ic_state_bookmark.xml -->
@@ -314,10 +324,20 @@ $$\text{Radius}_{\text{button}} = \text{Radius}_{\text{bar}} - \text{Padding}_{\
 
 ## 📝 Release Notes
 
+### v1.1.0
+- **Senior Review Hardening & Quality Gates**: Resolved all audit findings regarding lifecycle safety, state integrity, rendering performance, and CI/CD quality gates.
+- **Lifecycle Safety & Leak Prevention**: Automatically unbinds `ViewPager2` and Fragment callbacks, and cancels all running container and child animators on window detach (`onDetachedFromWindow()`). Added `unbindViewPager2()` and `clearFragmentBinding()` public APIs.
+- **Pill Lock Gating (`isActivated=false`)**: Physical click blocking at listener level when pill actions are locked or disabled. Added visual disabled state styling for locked pills (`state_activated="false"` with `@color/sb_button_disabled`).
+- **Zero Allocation on Draw**: Pre-cached `indicatorDrawable` to completely eliminate frame-by-frame object allocation during sliding indicator animations (`onDraw()`), preventing GC jank.
+- **State Model Decoupling**: Independent radio group selection (`isSelected`) and lock gating (`isActivated`). Single-selection guarantee strictly enforced in `setButtonSelected()`.
+- **Hybrid Pill Buttons**: Full XML and programmatic support for `app:sbButton*Style="pill"` within horizontal segmented bars.
+- **Public API & Bilingual KDoc**: Added comprehensive Turkish and English KDoc contracts across public APIs, plus new status query methods (`isButtonSelected`, `isButtonActivated`, `isButtonEnabled`, `getStyle`).
+- **GitHub Actions CI & Supply Chain**: Integrated automated CI pipeline (`.github/workflows/ci.yml`) for tests, lint, and Maven publishing; hardened JitPack repository resolution with group regex filters.
+
 ### v1.0.12
 - **Expandable Click Guard & Reactivity Fix**: Prevented unwanted triggers of selected button click listeners when expanding a collapsed bar, and guarded anchor visual states during reactive LiveData/ViewModel callback cycles.
 - **Full Expandable Button Persistence & Visual Restoration**: Fixed an issue where the initial button (button 0) became permanently hidden/overwritten after selecting other options in expandable mode. All buttons now remain permanently visible and selectable across multiple expand/collapse cycles.
-- **Dynamic Metadata Synchronization**: Runtime updates via `setButtonIcon`, `setButtonIconTint`, `setButtonTooltip`, and `setButtonContentDescription` are automatically synchronized with the expandable memory cache.
+- **Dynamic Metadata Synchronization**: Runtime updates via `setButtonText`, `setButtonIcon`, `setButtonIconTint`, `setButtonTooltip`, and `setButtonContentDescription` are automatically synchronized with the expandable memory cache.
 
 ### v1.0.10
 - **Synchronized Container Morphing Animation**: Real-time frame-by-frame capsule dimension morphing tightly synchronized with child button fade and glide physics for ultra-smooth expand and collapse transitions.
@@ -327,7 +347,7 @@ $$\text{Radius}_{\text{button}} = \text{Radius}_{\text{bar}} - \text{Padding}_{\
 ### v1.0.9
 - **Bar Container Background Color (`app:sbBarColor` & `setBarColor`)**: Added direct color customization for the outer bar capsule container while strictly preserving the 60dp rounded pill corner geometry.
 - **2D Sliding Indicator for Vertical Bars (`sbStyle="vertical"` & `sbSlideIndicator="true"`)**: Full support for smooth sliding pill selection animation along the vertical Y-axis.
-- **Soft Expandable Animation Physics**: Refined expandable drawer transitions with curved ease-in-out acceleration & deceleration (`FastOutSlowInInterpolator`) and gentle scaling.
+- **Soft Expandable Animations**: Refined expandable drawer transitions with curved ease-in-out acceleration & deceleration (`FastOutSlowInInterpolator`) and gentle scaling.
 - **Duplicate Button Exclusion**: The currently active button on the anchor is filtered out from the expanded drawer to avoid duplicate items.
 - **Theme-Adaptive Icon Tints**: Default button icons automatically resolve to `@color/sb_button_icon` (dark gray in Light mode, light gray/white in Dark mode).
 

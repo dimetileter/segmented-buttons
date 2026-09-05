@@ -7,7 +7,6 @@
     android:layout_height="@dimen/sb_button_height"
     android:background="@drawable/state_segmented_next_button"
     android:foreground="@drawable/ripple_segmented_button"
-    android:clipToOutline="true"
     android:clickable="true"
     android:focusable="true">
 

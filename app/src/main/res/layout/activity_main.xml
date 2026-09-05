@@ -17,7 +17,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="SegmentedButtonBar Demo"
+            android:text="@string/demo_title"
             android:textSize="20sp"
             android:textStyle="bold"
             android:layout_marginBottom="24dp" />
@@ -26,7 +26,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="0. Modern TabBar (Sliding Pill Indicator)"
+            android:text="@string/demo_section_tab"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -44,7 +44,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="1. 5-Button Hybrid Bar (with Icon Tint)"
+            android:text="@string/demo_section_five_button"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -65,7 +65,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="2. Horizontal Style (Text-Only / Centered)"
+            android:text="@string/demo_section_text_only"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -83,7 +83,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="3. Hybrid Style (2 Horizontal + 1 Circular 32x32)"
+            android:text="@string/demo_section_hybrid"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -102,7 +102,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="4. Horizontal Style (Icon + Text)"
+            android:text="@string/demo_section_icon_text"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -121,7 +121,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="5. Vertical Style (3 Buttons)"
+            android:text="@string/demo_section_vertical"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -139,7 +139,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="6. Expandable Animated Style (Horizontal &amp; Vertical)"
+            android:text="@string/demo_section_expandable"
             android:layout_marginBottom="8dp" />
 
         <LinearLayout
@@ -179,7 +179,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="7. Pill Style (Next Action)"
+            android:text="@string/demo_section_pill"
             android:layout_marginBottom="8dp" />
 
         <com.dimetileter.segmentedbuttonbar.SegmentedButtonBar
@@ -188,6 +188,7 @@
             android:layout_height="wrap_content"
             app:sbStyle="pill"
             app:sbPillType="next"
+            app:sbPillActivated="true"
             android:layout_marginBottom="20dp" />
 
         <!-- Status Output -->
@@ -195,7 +196,7 @@
             android:id="@+id/statusText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Status: Ready"
+            android:text="@string/status_ready"
             android:textSize="14sp"
             android:layout_marginTop="8dp" />
     </LinearLayout>

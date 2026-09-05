@@ -12,7 +12,6 @@
     android:padding="@dimen/sb_button_padding"
     android:background="@drawable/state_segmented_button"
     android:foreground="@drawable/ripple_segmented_button"
-    android:clipToOutline="true"
     android:clickable="true"
     android:focusable="true">
 

@@ -122,7 +122,7 @@ class IconTintAndAllActivatedTest {
      */
     @Test
     fun verifyFiveAndSixButtonCounts() {
-        val attrs = Robolectric.buildAttributeSet()
+        val fiveButtonAttrs = Robolectric.buildAttributeSet()
             .addAttribute(R.attr.sbStyle, "horizontal")
             .addAttribute(R.attr.sbButtonCount, "5")
             .addAttribute(R.attr.sbButton1Icon, "@drawable/ic_sb_arrow_back")
@@ -132,8 +132,19 @@ class IconTintAndAllActivatedTest {
             .addAttribute(R.attr.sbButton5Icon, "@drawable/ic_sb_arrow_back")
             .build()
 
-        val bar = SegmentedButtonBar(context, attrs)
-        assertThat(bar.getButtonCount()).isEqualTo(5)
+        val sixButtonAttrs = Robolectric.buildAttributeSet()
+            .addAttribute(R.attr.sbStyle, "horizontal")
+            .addAttribute(R.attr.sbButtonCount, "6")
+            .addAttribute(R.attr.sbButton1Icon, "@drawable/ic_sb_arrow_back")
+            .addAttribute(R.attr.sbButton2Icon, "@drawable/ic_sb_arrow_next")
+            .addAttribute(R.attr.sbButton3Icon, "@drawable/ic_sb_arrow_back")
+            .addAttribute(R.attr.sbButton4Icon, "@drawable/ic_sb_arrow_next")
+            .addAttribute(R.attr.sbButton5Icon, "@drawable/ic_sb_arrow_back")
+            .addAttribute(R.attr.sbButton6Icon, "@drawable/ic_sb_arrow_next")
+            .build()
+
+        assertThat(SegmentedButtonBar(context, fiveButtonAttrs).getButtonCount()).isEqualTo(5)
+        assertThat(SegmentedButtonBar(context, sixButtonAttrs).getButtonCount()).isEqualTo(6)
     }
 
     /**

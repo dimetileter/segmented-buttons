@@ -2,5 +2,5 @@
 <!-- ColorStateList for vertical button icon tinting -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_selected="true" android:color="@color/sb_button_text" />
-    <item android:color="#787880" />
+    <item android:color="@color/sb_button_icon_unselected" />
 </selector>

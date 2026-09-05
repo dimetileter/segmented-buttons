@@ -24,88 +24,88 @@ class MainActivity : AppCompatActivity() {
         // TabBar with Sliding Indicator
         binding.tabBarDemo.setOnTabSelectedListener { position ->
             val tabName = when (position) {
-                0 -> "Home"
-                1 -> "Explore"
-                2 -> "Profile"
-                else -> "Tab ${position + 1}"
+                0 -> getString(R.string.tab_home)
+                1 -> getString(R.string.tab_explore)
+                2 -> getString(R.string.tab_profile)
+                else -> getString(R.string.tab_fallback, position + 1)
             }
-            binding.statusText.text = "Status: TabBar selected -> $tabName"
+            binding.statusText.text = getString(R.string.status_tab_selected, tabName)
         }
 
         // 5-Button Bar with Circular action and icon tint
         binding.fiveButtonBar.setOnButton1Click {
-            binding.statusText.text = "Status: 5-Button -> Button 1 clicked"
+            binding.statusText.text = getString(R.string.status_five_button_1)
         }
         binding.fiveButtonBar.setOnButton2Click {
-            binding.statusText.text = "Status: 5-Button -> Button 2 clicked"
+            binding.statusText.text = getString(R.string.status_five_button_2)
         }
         binding.fiveButtonBar.setOnButton3Click {
-            binding.statusText.text = "Status: 5-Button -> Button 3 clicked"
+            binding.statusText.text = getString(R.string.status_five_button_3)
         }
         binding.fiveButtonBar.setOnButton4Click {
-            binding.statusText.text = "Status: 5-Button -> Button 4 clicked"
+            binding.statusText.text = getString(R.string.status_five_button_4)
         }
         binding.fiveButtonBar.setOnButton5Click {
-            binding.statusText.text = "Status: 5-Button -> Button 5 (Circular) clicked!"
+            binding.statusText.text = getString(R.string.status_five_button_5)
         }
 
         // Horizontal text-only bar (Day, Week, Month)
         binding.horizontalBarTextOnly.setOnButton1Click {
-            binding.statusText.text = "Status: Text-Only -> Button 1 (Day)"
+            binding.statusText.text = getString(R.string.status_text_only_day)
         }
         binding.horizontalBarTextOnly.setOnButton2Click {
-            binding.statusText.text = "Status: Text-Only -> Button 2 (Week)"
+            binding.statusText.text = getString(R.string.status_text_only_week)
         }
         binding.horizontalBarTextOnly.setOnButton3Click {
-            binding.statusText.text = "Status: Text-Only -> Button 3 (Month)"
+            binding.statusText.text = getString(R.string.status_text_only_month)
         }
 
         // Hybrid bar (2 Horizontal + 1 Circular 32x32dp)
         binding.hybridBar.setOnButton1Click {
-            binding.statusText.text = "Status: Hybrid -> Tab 1 (Active)"
+            binding.statusText.text = getString(R.string.status_hybrid_active)
         }
         binding.hybridBar.setOnButton2Click {
-            binding.statusText.text = "Status: Hybrid -> Tab 2 (Completed)"
+            binding.statusText.text = getString(R.string.status_hybrid_completed)
         }
         binding.hybridBar.setOnButton3Click {
-            binding.statusText.text = "Status: Hybrid -> Button 3 (Circular 32x32 Action clicked!)"
+            binding.statusText.text = getString(R.string.status_hybrid_circular)
         }
 
         // Horizontal icon + text bar
         binding.horizontalBarIconText.setOnButton1Click {
-            binding.statusText.text = "Status: Icon+Text -> Button 1 (Previous)"
+            binding.statusText.text = getString(R.string.status_icon_text_previous)
         }
         binding.horizontalBarIconText.setOnButton2Click {
-            binding.statusText.text = "Status: Icon+Text -> Button 2 (Next)"
+            binding.statusText.text = getString(R.string.status_icon_text_next)
         }
 
         // Vertical 3-button bar
         binding.verticalBar3.setOnButton1Click {
-            binding.statusText.text = "Status: Vertical -> Button 1"
+            binding.statusText.text = getString(R.string.status_vertical_1)
         }
         binding.verticalBar3.setOnButton2Click {
-            binding.statusText.text = "Status: Vertical -> Button 2"
+            binding.statusText.text = getString(R.string.status_vertical_2)
         }
         binding.verticalBar3.setOnButton3Click {
-            binding.statusText.text = "Status: Vertical -> Button 3"
+            binding.statusText.text = getString(R.string.status_vertical_3)
         }
 
         // Expandable animated bar
         binding.expandableBar.setOnExpandChangeListener { isExpanded ->
-            binding.statusText.text = "Status: Expandable bar (Expanded: $isExpanded)"
+            binding.statusText.text = getString(R.string.status_expandable_changed, isExpanded)
         }
         binding.expandableBar.setOnButton2Click {
-            binding.statusText.text = "Status: Expandable -> Button 2 clicked"
+            binding.statusText.text = getString(R.string.status_expandable_2)
         }
         binding.expandableBar.setOnButton3Click {
-            binding.statusText.text = "Status: Expandable -> Button 3 clicked"
+            binding.statusText.text = getString(R.string.status_expandable_3)
         }
 
         // Pill button bar
         binding.pillNextBar.setOnPillClick {
             val isNowActive = !binding.pillNextBar.isPillActivated()
             binding.pillNextBar.setPillActivated(isNowActive)
-            binding.statusText.text = "Status: Pill Next clicked (Activated: $isNowActive)"
+            binding.statusText.text = getString(R.string.status_pill_next_clicked, isNowActive)
         }
     }
 }

@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.github.dimetileter"
-version = "1.0.12"
+version = "1.1.0"
 
 android {
     namespace = "com.dimetileter.segmentedbuttonbar"
@@ -63,7 +63,6 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
-    implementation(libs.androidx.dynamicanimation)
     api(libs.androidx.viewpager2)
     api(libs.androidx.fragment.ktx)
 

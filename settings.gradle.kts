@@ -21,7 +21,12 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven { url = java.net.URI("https://jitpack.io") }
+        maven {
+            url = java.net.URI("https://jitpack.io")
+            content {
+                includeGroupByRegex("com\\.github.*")
+            }
+        }
     }
 }
 

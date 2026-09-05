@@ -91,4 +91,30 @@ class HybridStyleTest {
         bar.getButton(2)?.performClick()
         assertThat(circularActionClicked).isTrue()
     }
+
+    /**
+     * Hibrit çubuklarda XML'deki per-button pill stilinin gerçekten pill layout ürettiğini doğrular.
+     * Verifies per-button pill style creates an actual pill item in hybrid bars.
+     */
+    @Test
+    fun verifyHybridPillButtonStyle() {
+        val attrs = Robolectric.buildAttributeSet()
+            .addAttribute(R.attr.sbStyle, "horizontal")
+            .addAttribute(R.attr.sbButtonCount, "3")
+            .addAttribute(R.attr.sbButton1Text, "Tab 1")
+            .addAttribute(R.attr.sbButton2Text, "Tab 2")
+            .addAttribute(R.attr.sbButton3Style, "pill")
+            .addAttribute(R.attr.sbButton3Text, "Apply")
+            .build()
+
+        val bar = SegmentedButtonBar(context, attrs)
+        var pillClicked = false
+
+        bar.setOnButton3Click { pillClicked = true }
+        bar.getButton(2)?.performClick()
+
+        assertThat(bar.getButton(2)?.id).isEqualTo(R.id.sb_pill_root)
+        assertThat(bar.getButton(2)?.findViewById<android.view.View>(R.id.sb_pill_text)).isNotNull()
+        assertThat(pillClicked).isTrue()
+    }
 }

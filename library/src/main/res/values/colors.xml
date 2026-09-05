@@ -7,5 +7,6 @@
     <color name="sb_button_disabled">#1A0D0D0D</color>
     <color name="sb_button_text">#333333</color>
     <color name="sb_button_icon">#333333</color>
+    <color name="sb_button_icon_unselected">#787880</color>
     <color name="sb_button_ripple_color">#14000000</color>
 </resources>
